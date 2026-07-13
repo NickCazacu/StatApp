@@ -44,6 +44,14 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Подписываем debug тем же release-ключом, чтобы сборка из Android Studio
+            // ставилась ПОВЕРХ установленного release-APK (совпадает подпись + applicationId)
+            // и данные (Room-БД) сохранялись. Только если keystore.properties доступен.
+            if (keystoreProps.isNotEmpty()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
         release {
             // Подпись релиза ключом из keystore.properties (если он есть).
             if (keystoreProps.isNotEmpty()) {

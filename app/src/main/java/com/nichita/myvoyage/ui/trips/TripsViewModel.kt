@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.nichita.myvoyage.data.model.Trip
+import com.nichita.myvoyage.data.repository.RatesRepository
 import com.nichita.myvoyage.data.repository.VoyageRepository
+import com.nichita.myvoyage.ui.ratesRepository
 import com.nichita.myvoyage.ui.voyageRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,20 +26,25 @@ data class TripListItem(
  * Объединяет поток рейсов с потоком итоговых сумм по рейсам.
  */
 class TripsViewModel(
-    private val repository: VoyageRepository
+    private val repository: VoyageRepository,
+    ratesRepository: RatesRepository
 ) : ViewModel() {
 
     /** Состояние экрана — список рейсов с потраченными суммами (расходы + топливо). */
     val trips: StateFlow<List<TripListItem>> =
         combine(
             repository.observeTrips(),
-            repository.observeTotalsPerTrip(),
-            repository.observeFuelTotalsPerTrip()
-        ) { trips, expenseTotals, fuelTotals ->
-            val expenseById = expenseTotals.associate { it.tripId to it.total }
+            repository.observeCurrencyTotalsPerTrip(),
+            repository.observeFuelTotalsPerTrip(),
+            ratesRepository.observeRates()
+        ) { trips, currencyTotals, fuelTotals, rates ->
             val fuelById = fuelTotals.associate { it.tripId to it.total }
             trips.map { t ->
-                val spent = (expenseById[t.id] ?: 0.0) + (fuelById[t.id] ?: 0.0)
+                // Разновалютные расходы сводим в валюту рейса; топливо уже в ней.
+                val expenseSpent = currencyTotals
+                    .filter { it.tripId == t.id }
+                    .sumOf { rates.convert(it.total, it.currency, t.currency) }
+                val spent = expenseSpent + (fuelById[t.id] ?: 0.0)
                 TripListItem(t, spent)
             }
         }.stateIn(
@@ -53,7 +60,7 @@ class TripsViewModel(
 
     companion object {
         val Factory = viewModelFactory {
-            initializer { TripsViewModel(voyageRepository()) }
+            initializer { TripsViewModel(voyageRepository(), ratesRepository()) }
         }
     }
 }

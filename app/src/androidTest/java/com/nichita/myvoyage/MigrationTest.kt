@@ -5,6 +5,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.nichita.myvoyage.data.db.AppDatabase
 import com.nichita.myvoyage.data.db.MIGRATION_1_2
+import com.nichita.myvoyage.data.db.MIGRATION_2_3
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -68,6 +69,46 @@ class MigrationTest {
             assertTrue("Расход должен сохраниться", c.moveToFirst())
             assertEquals(25.0, c.getDouble(0), 0.001)
             assertEquals("обед", c.getString(1))
+        }
+
+        db.close()
+    }
+
+    @Test
+    fun migrate2To3_preservesData_andAddsRatesTable() {
+        // --- Версия 2: наполняем данными (без таблицы курсов) ---
+        helper.createDatabase(testDb, 2).apply {
+            execSQL(
+                "INSERT INTO trips (id, destination, startDate, endDate, currency) " +
+                    "VALUES (1, 'Кишинёв → Варшава', 1000, 2000, 'PLN')"
+            )
+            execSQL(
+                "INSERT INTO expenses (id, tripId, amount, currency, category, date, note) " +
+                    "VALUES (1, 1, 50.0, 'EUR', 'FOOD', 1600, 'ужин')"
+            )
+            close()
+        }
+
+        // --- Применяем миграцию и валидируем против схемы версии 3 ---
+        val db = helper.runMigrationsAndValidate(testDb, 3, true, MIGRATION_2_3)
+
+        // Данные пользователя сохранились.
+        db.query("SELECT destination, currency FROM trips WHERE id = 1").use { c ->
+            assertTrue("Рейс должен сохраниться", c.moveToFirst())
+            assertEquals("Кишинёв → Варшава", c.getString(0))
+            assertEquals("PLN", c.getString(1))
+        }
+        db.query("SELECT amount, currency FROM expenses WHERE id = 1").use { c ->
+            assertTrue("Расход должен сохраниться", c.moveToFirst())
+            assertEquals(50.0, c.getDouble(0), 0.001)
+            assertEquals("EUR", c.getString(1))
+        }
+
+        // Новая таблица курсов доступна для записи.
+        db.execSQL("INSERT INTO exchange_rates (code, mdlPerUnit, updatedAt) VALUES ('EUR', 20.0, 123)")
+        db.query("SELECT mdlPerUnit FROM exchange_rates WHERE code = 'EUR'").use { c ->
+            assertTrue("Курс должен записаться", c.moveToFirst())
+            assertEquals(20.0, c.getDouble(0), 0.001)
         }
 
         db.close()

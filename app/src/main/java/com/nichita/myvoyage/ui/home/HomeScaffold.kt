@@ -36,7 +36,8 @@ fun HomeScaffold(
     onAddTrip: () -> Unit,
     onOpenTrip: (Long) -> Unit,
     onQuickExpense: (Long) -> Unit,
-    onQuickFuel: (Long) -> Unit
+    onQuickFuel: (Long) -> Unit,
+    onOpenRates: () -> Unit
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val hazeState = remember { HazeState() }
@@ -83,6 +84,7 @@ fun HomeScaffold(
                     onOpenTrip = onOpenTrip,
                     onQuickExpense = onQuickExpense,
                     onQuickFuel = onQuickFuel,
+                    onOpenRates = onOpenRates,
                     bottomInset = bottomInset
                 )
                 1 -> OverallStatsScreen(onBack = {}, showBack = false, bottomInset = bottomInset)

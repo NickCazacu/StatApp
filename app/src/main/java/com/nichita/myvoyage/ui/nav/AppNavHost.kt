@@ -11,6 +11,7 @@ import com.nichita.myvoyage.ui.expense.ExpenseEditScreen
 import com.nichita.myvoyage.ui.export.ExportScreen
 import com.nichita.myvoyage.ui.fuel.FuelEditScreen
 import com.nichita.myvoyage.ui.home.HomeScaffold
+import com.nichita.myvoyage.ui.rates.CurrencyRatesScreen
 import com.nichita.myvoyage.ui.stats.StatsScreen
 import com.nichita.myvoyage.ui.tips.TipsScreen
 import com.nichita.myvoyage.ui.trips.TripEditScreen
@@ -33,8 +34,14 @@ fun AppNavHost() {
                 onAddTrip = { navController.navigate(Routes.tripEdit()) },
                 onOpenTrip = { id -> navController.navigate(Routes.tripDetail(id)) },
                 onQuickExpense = { id -> navController.navigate(Routes.expenseEdit(id)) },
-                onQuickFuel = { id -> navController.navigate(Routes.fuelEdit(id)) }
+                onQuickFuel = { id -> navController.navigate(Routes.fuelEdit(id)) },
+                onOpenRates = { navController.navigate(Routes.currencyRates()) }
             )
+        }
+
+        // Курс валют (НБМ)
+        composable(Routes.CURRENCY_RATES) {
+            CurrencyRatesScreen(onBack = { navController.popBackStack() })
         }
 
         // Создание/редактирование рейса
@@ -68,7 +75,8 @@ fun AppNavHost() {
                 onEditFuel = { id -> navController.navigate(Routes.fuelEdit(tripId, id)) },
                 onOpenStats = { navController.navigate(Routes.stats(tripId)) },
                 onOpenTips = { navController.navigate(Routes.tips(tripId)) },
-                onOpenExport = { navController.navigate(Routes.export(tripId)) }
+                onOpenExport = { navController.navigate(Routes.export(tripId)) },
+                onDeleted = { navController.popBackStack() }
             )
         }
 

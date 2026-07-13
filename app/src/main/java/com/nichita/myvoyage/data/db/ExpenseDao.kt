@@ -51,6 +51,51 @@ interface ExpenseDao {
     )
     fun observeTotalsPerTrip(): Flow<List<TripTotal>>
 
+    /**
+     * Итоги по всем рейсам в разрезе валюты расхода (для списка рейсов).
+     * Разновалютные суммы сводятся в валюту рейса уже в Kotlin по курсу НБМ.
+     */
+    @Query(
+        """
+        SELECT tripId AS tripId, currency AS currency, SUM(amount) AS total
+        FROM expenses
+        GROUP BY tripId, currency
+        """
+    )
+    fun observeCurrencyTotalsPerTrip(): Flow<List<TripCurrencyTotal>>
+
+    /** То же разово — для советов/экспорта. */
+    @Query(
+        """
+        SELECT tripId AS tripId, currency AS currency, SUM(amount) AS total
+        FROM expenses
+        GROUP BY tripId, currency
+        """
+    )
+    suspend fun getCurrencyTotalsPerTrip(): List<TripCurrencyTotal>
+
+    /** Разбивка расходов рейса по валюте и категории (для конвертации в валюту рейса). */
+    @Query(
+        """
+        SELECT currency AS currency, category AS category, SUM(amount) AS total
+        FROM expenses
+        WHERE tripId = :tripId
+        GROUP BY currency, category
+        """
+    )
+    fun observeCurrencyCategorySumsForTrip(tripId: Long): Flow<List<CurrencyCategorySum>>
+
+    /** То же разово (для советов). */
+    @Query(
+        """
+        SELECT currency AS currency, category AS category, SUM(amount) AS total
+        FROM expenses
+        WHERE tripId = :tripId
+        GROUP BY currency, category
+        """
+    )
+    suspend fun getCurrencyCategorySumsForTrip(tripId: Long): List<CurrencyCategorySum>
+
     /** Разбивка по категориям одного рейса (разово, для анализа советов). */
     @Query(
         """
@@ -96,6 +141,17 @@ interface ExpenseDao {
         """
     )
     fun observeCategorySumsByCurrency(): Flow<List<CurrencyCategorySum>>
+
+    /** То же разово (для советов — свод категорий по всем рейсам в общую валюту). */
+    @Query(
+        """
+        SELECT t.currency AS currency, e.category AS category, SUM(e.amount) AS total
+        FROM expenses e
+        JOIN trips t ON e.tripId = t.id
+        GROUP BY t.currency, e.category
+        """
+    )
+    suspend fun getCategorySumsByCurrency(): List<CurrencyCategorySum>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(expense: Expense): Long

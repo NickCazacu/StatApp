@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
+import androidx.compose.material.icons.outlined.CurrencyExchange
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.LocalGasStation
 import androidx.compose.material3.Card
@@ -71,6 +72,7 @@ fun TripsScreen(
     onOpenTrip: (Long) -> Unit,
     onQuickExpense: (Long) -> Unit,
     onQuickFuel: (Long) -> Unit,
+    onOpenRates: () -> Unit,
     bottomInset: Dp = 0.dp,
     viewModel: TripsViewModel = viewModel(factory = TripsViewModel.Factory)
 ) {
@@ -114,6 +116,9 @@ fun TripsScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Плитка курса валют — доступна всегда (даже без рейсов).
+            item { CurrencyTile(onClick = onOpenRates) }
+
             if (trips.isEmpty()) {
                 item { PromoCard(onAddTrip) }
                 item {
@@ -191,6 +196,43 @@ private fun QuickActions(
             gradient = AppGradients[2],
             onClick = { onQuickFuel(activeTripId) }
         )
+    }
+}
+
+/** Широкая плитка-шорткат на экран курса валют. */
+@Composable
+private fun CurrencyTile(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(84.dp)
+            .clip(MaterialTheme.shapes.large)
+            .background(AppGradients[4])
+            .clickable(onClick = onClick)
+            .padding(16.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Outlined.CurrencyExchange,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(Modifier.width(14.dp))
+            Column {
+                Text(
+                    "Курс валют",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White
+                )
+                Text(
+                    "Актуальные курсы НБМ",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.9f)
+                )
+            }
+        }
     }
 }
 

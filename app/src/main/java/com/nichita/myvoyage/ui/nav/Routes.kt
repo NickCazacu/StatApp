@@ -14,6 +14,9 @@ object NavArgs {
 object Routes {
     const val TRIPS = "trips"
 
+    const val CURRENCY_RATES = "currency_rates"
+    fun currencyRates() = CURRENCY_RATES
+
     const val TRIP_EDIT = "trip_edit?tripId={tripId}"
     fun tripEdit(tripId: Long = 0L) = "trip_edit?tripId=$tripId"
 

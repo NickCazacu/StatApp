@@ -25,3 +25,14 @@ data class TripTotal(
     val tripId: Long,
     val total: Double
 )
+
+/**
+ * Сумма расходов рейса в разрезе валюты самого расхода.
+ * Позволяет свести разновалютные расходы в валюту рейса по курсу (конвертация
+ * делается в Kotlin, т.к. SQL не знает курсов).
+ */
+data class TripCurrencyTotal(
+    val tripId: Long,
+    val currency: Currency,
+    val total: Double
+)

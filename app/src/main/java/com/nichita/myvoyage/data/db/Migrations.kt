@@ -72,5 +72,25 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
+/**
+ * v2 → v3:
+ *  - новая таблица `exchange_rates` — офлайн-кэш курсов валют (НБМ).
+ *    Существующие данные пользователя не затрагиваются.
+ */
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `exchange_rates` (
+                `code` TEXT NOT NULL,
+                `mdlPerUnit` REAL NOT NULL,
+                `updatedAt` INTEGER NOT NULL,
+                PRIMARY KEY(`code`)
+            )
+            """.trimIndent()
+        )
+    }
+}
+
 /** Все миграции приложения — передаются в RoomDatabase.Builder. */
-val ALL_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2)
+val ALL_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)

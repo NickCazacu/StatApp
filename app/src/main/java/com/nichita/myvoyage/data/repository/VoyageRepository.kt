@@ -4,6 +4,7 @@ import com.nichita.myvoyage.data.db.CategorySum
 import com.nichita.myvoyage.data.db.CurrencyCategorySum
 import com.nichita.myvoyage.data.db.ExpenseDao
 import com.nichita.myvoyage.data.db.FuelDao
+import com.nichita.myvoyage.data.db.TripCurrencyTotal
 import com.nichita.myvoyage.data.db.TripDao
 import com.nichita.myvoyage.data.db.TripTotal
 import com.nichita.myvoyage.data.model.Expense
@@ -41,11 +42,21 @@ class VoyageRepository(
     suspend fun getExpensesForTrip(tripId: Long): List<Expense> = expenseDao.getByTrip(tripId)
     fun observeTotalsPerTrip(): Flow<List<TripTotal>> = expenseDao.observeTotalsPerTrip()
     suspend fun getTotalsPerTrip(): List<TripTotal> = expenseDao.getTotalsPerTrip()
+    fun observeCurrencyTotalsPerTrip(): Flow<List<TripCurrencyTotal>> =
+        expenseDao.observeCurrencyTotalsPerTrip()
+    suspend fun getCurrencyTotalsPerTrip(): List<TripCurrencyTotal> =
+        expenseDao.getCurrencyTotalsPerTrip()
+    fun observeCurrencyCategorySumsForTrip(tripId: Long): Flow<List<CurrencyCategorySum>> =
+        expenseDao.observeCurrencyCategorySumsForTrip(tripId)
+    suspend fun getCurrencyCategorySumsForTrip(tripId: Long): List<CurrencyCategorySum> =
+        expenseDao.getCurrencyCategorySumsForTrip(tripId)
     suspend fun getCategorySumsForTrip(tripId: Long): List<CategorySum> =
         expenseDao.getCategorySumsForTrip(tripId)
     suspend fun getCategorySumsAllTrips(): List<CategorySum> = expenseDao.getCategorySumsAllTrips()
     fun observeCategorySumsByCurrency(): Flow<List<CurrencyCategorySum>> =
         expenseDao.observeCategorySumsByCurrency()
+    suspend fun getCategorySumsByCurrency(): List<CurrencyCategorySum> =
+        expenseDao.getCategorySumsByCurrency()
     suspend fun upsertExpense(expense: Expense): Long =
         if (expense.id == 0L) expenseDao.insert(expense) else { expenseDao.update(expense); expense.id }
     suspend fun deleteExpense(expense: Expense) = expenseDao.delete(expense)
