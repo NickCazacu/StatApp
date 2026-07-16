@@ -5,6 +5,7 @@ object NavArgs {
     const val TRIP_ID = "tripId"
     const val ITEM_ID = "itemId"
     const val OFFICE_ID = "officeId"
+    const val VEHICLE_ID = "vehicleId"
 }
 
 /**
@@ -56,4 +57,22 @@ object Routes {
     const val OFFICE_EXPENSE_EDIT = "office/{officeId}/expense?itemId={itemId}"
     fun officeExpenseEdit(officeId: Long, itemId: Long = 0L) =
         "office/$officeId/expense?itemId=$itemId"
+
+    // --- Автомобили ---
+
+    const val VEHICLE_EDIT = "vehicle_edit?vehicleId={vehicleId}"
+    fun vehicleEdit(vehicleId: Long = 0L) = "vehicle_edit?vehicleId=$vehicleId"
+
+    const val VEHICLE_DETAIL = "vehicle/{vehicleId}"
+    fun vehicleDetail(vehicleId: Long) = "vehicle/$vehicleId"
+
+    const val VEHICLE_STATS = "vehicle/{vehicleId}/stats"
+    fun vehicleStats(vehicleId: Long) = "vehicle/$vehicleId/stats"
+
+    const val VEHICLE_TIPS = "vehicle/{vehicleId}/tips"
+    fun vehicleTips(vehicleId: Long) = "vehicle/$vehicleId/tips"
+
+    const val VEHICLE_EXPENSE_EDIT = "vehicle/{vehicleId}/expense?itemId={itemId}"
+    fun vehicleExpenseEdit(vehicleId: Long, itemId: Long = 0L) =
+        "vehicle/$vehicleId/expense?itemId=$itemId"
 }

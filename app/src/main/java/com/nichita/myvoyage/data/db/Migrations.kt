@@ -133,5 +133,47 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
+/**
+ * v4 → v5:
+ *  - новые таблицы `vehicles` и `vehicle_expenses` — учёт помесячных расходов
+ *    по автомобилям (по образцу офисов). Существующие данные не затрагиваются.
+ */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `vehicles` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `name` TEXT NOT NULL,
+                `plate` TEXT NOT NULL,
+                `currency` TEXT NOT NULL
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `vehicle_expenses` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `vehicleId` INTEGER NOT NULL,
+                `year` INTEGER NOT NULL,
+                `month` INTEGER NOT NULL,
+                `category` TEXT NOT NULL,
+                `amount` REAL NOT NULL,
+                `note` TEXT NOT NULL,
+                FOREIGN KEY(`vehicleId`) REFERENCES `vehicles`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_vehicle_expenses_vehicleId` ON `vehicle_expenses` (`vehicleId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_vehicle_expenses_vehicleId_year_month` " +
+                "ON `vehicle_expenses` (`vehicleId`, `year`, `month`)"
+        )
+    }
+}
+
 /** Все миграции приложения — передаются в RoomDatabase.Builder. */
-val ALL_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+val ALL_MIGRATIONS: Array<Migration> =
+    arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)

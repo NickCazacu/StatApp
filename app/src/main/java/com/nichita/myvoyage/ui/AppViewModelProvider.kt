@@ -5,6 +5,7 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import com.nichita.myvoyage.MyVoyageApp
 import com.nichita.myvoyage.data.repository.OfficeRepository
 import com.nichita.myvoyage.data.repository.RatesRepository
+import com.nichita.myvoyage.data.repository.VehicleRepository
 import com.nichita.myvoyage.data.repository.VoyageRepository
 
 /**
@@ -26,4 +27,10 @@ fun CreationExtras.ratesRepository(): RatesRepository {
 fun CreationExtras.officeRepository(): OfficeRepository {
     val app = this[APPLICATION_KEY] as MyVoyageApp
     return app.officeRepository
+}
+
+/** Репозиторий автомобилей для фабрик ViewModel. */
+fun CreationExtras.vehicleRepository(): VehicleRepository {
+    val app = this[APPLICATION_KEY] as MyVoyageApp
+    return app.vehicleRepository
 }

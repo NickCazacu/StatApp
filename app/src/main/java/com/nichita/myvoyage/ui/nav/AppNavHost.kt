@@ -20,6 +20,11 @@ import com.nichita.myvoyage.ui.rates.CurrencyRatesScreen
 import com.nichita.myvoyage.ui.stats.StatsScreen
 import com.nichita.myvoyage.ui.tips.TipsScreen
 import com.nichita.myvoyage.ui.trips.TripEditScreen
+import com.nichita.myvoyage.ui.vehicles.VehicleDetailScreen
+import com.nichita.myvoyage.ui.vehicles.VehicleEditScreen
+import com.nichita.myvoyage.ui.vehicles.VehicleExpenseEditScreen
+import com.nichita.myvoyage.ui.vehicles.VehicleStatsScreen
+import com.nichita.myvoyage.ui.vehicles.VehicleTipsScreen
 
 /**
  * Граф навигации приложения.
@@ -42,7 +47,9 @@ fun AppNavHost() {
                 onQuickFuel = { id -> navController.navigate(Routes.fuelEdit(id)) },
                 onOpenRates = { navController.navigate(Routes.currencyRates()) },
                 onAddOffice = { navController.navigate(Routes.officeEdit()) },
-                onOpenOffice = { id -> navController.navigate(Routes.officeDetail(id)) }
+                onOpenOffice = { id -> navController.navigate(Routes.officeDetail(id)) },
+                onAddVehicle = { navController.navigate(Routes.vehicleEdit()) },
+                onOpenVehicle = { id -> navController.navigate(Routes.vehicleDetail(id)) }
             )
         }
 
@@ -208,6 +215,74 @@ fun AppNavHost() {
             )
         ) {
             OfficeExpenseEditScreen(
+                onBack = { navController.popBackStack() },
+                onSaved = { navController.popBackStack() }
+            )
+        }
+
+        // Создание/редактирование автомобиля
+        composable(
+            route = Routes.VEHICLE_EDIT,
+            arguments = listOf(
+                navArgument(NavArgs.VEHICLE_ID) {
+                    type = NavType.LongType
+                    defaultValue = 0L
+                }
+            )
+        ) {
+            VehicleEditScreen(
+                onBack = { navController.popBackStack() },
+                onSaved = { navController.popBackStack() }
+            )
+        }
+
+        // Детали автомобиля: помесячные расходы, статистика, советы
+        composable(
+            route = Routes.VEHICLE_DETAIL,
+            arguments = listOf(navArgument(NavArgs.VEHICLE_ID) { type = NavType.LongType })
+        ) { entry ->
+            val vehicleId = entry.arguments?.getLong(NavArgs.VEHICLE_ID) ?: 0L
+            VehicleDetailScreen(
+                onBack = { navController.popBackStack() },
+                onEditVehicle = { navController.navigate(Routes.vehicleEdit(vehicleId)) },
+                onAddExpense = { navController.navigate(Routes.vehicleExpenseEdit(vehicleId)) },
+                onEditExpense = { id ->
+                    navController.navigate(Routes.vehicleExpenseEdit(vehicleId, id))
+                },
+                onOpenStats = { navController.navigate(Routes.vehicleStats(vehicleId)) },
+                onOpenTips = { navController.navigate(Routes.vehicleTips(vehicleId)) },
+                onDeleted = { navController.popBackStack() }
+            )
+        }
+
+        // Статистика автомобиля
+        composable(
+            route = Routes.VEHICLE_STATS,
+            arguments = listOf(navArgument(NavArgs.VEHICLE_ID) { type = NavType.LongType })
+        ) {
+            VehicleStatsScreen(onBack = { navController.popBackStack() })
+        }
+
+        // Советы по автомобилю
+        composable(
+            route = Routes.VEHICLE_TIPS,
+            arguments = listOf(navArgument(NavArgs.VEHICLE_ID) { type = NavType.LongType })
+        ) {
+            VehicleTipsScreen(onBack = { navController.popBackStack() })
+        }
+
+        // Создание/редактирование расхода автомобиля
+        composable(
+            route = Routes.VEHICLE_EXPENSE_EDIT,
+            arguments = listOf(
+                navArgument(NavArgs.VEHICLE_ID) { type = NavType.LongType },
+                navArgument(NavArgs.ITEM_ID) {
+                    type = NavType.LongType
+                    defaultValue = 0L
+                }
+            )
+        ) {
+            VehicleExpenseEditScreen(
                 onBack = { navController.popBackStack() },
                 onSaved = { navController.popBackStack() }
             )

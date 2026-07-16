@@ -7,6 +7,7 @@ import com.nichita.myvoyage.data.db.AppDatabase
 import com.nichita.myvoyage.data.db.MIGRATION_1_2
 import com.nichita.myvoyage.data.db.MIGRATION_2_3
 import com.nichita.myvoyage.data.db.MIGRATION_3_4
+import com.nichita.myvoyage.data.db.MIGRATION_4_5
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -158,6 +159,58 @@ class MigrationTest {
             assertTrue("Расход офиса должен записаться", c.moveToFirst())
             assertEquals(15000.0, c.getDouble(0), 0.001)
             assertEquals("RENT", c.getString(1))
+        }
+
+        db.close()
+    }
+
+    @Test
+    fun migrate4To5_preservesData_andAddsVehicleTables() {
+        // --- Версия 4: наполняем данными (без таблиц автомобилей) ---
+        helper.createDatabase(testDb, 4).apply {
+            execSQL(
+                "INSERT INTO trips (id, destination, startDate, endDate, currency) " +
+                    "VALUES (1, 'Кишинёв → Вена', 1000, 2000, 'EUR')"
+            )
+            execSQL(
+                "INSERT INTO offices (id, name, address, currency) " +
+                    "VALUES (1, 'Офис Кишинёв', '', 'MDL')"
+            )
+            execSQL(
+                "INSERT INTO office_expenses (id, officeId, year, month, category, amount, note) " +
+                    "VALUES (1, 1, 2026, 6, 'RENT', 12000.0, '')"
+            )
+            close()
+        }
+
+        // --- Применяем миграцию и валидируем против схемы версии 5 ---
+        val db = helper.runMigrationsAndValidate(testDb, 5, true, MIGRATION_4_5)
+
+        // Данные пользователя сохранились.
+        db.query("SELECT destination FROM trips WHERE id = 1").use { c ->
+            assertTrue("Рейс должен сохраниться", c.moveToFirst())
+            assertEquals("Кишинёв → Вена", c.getString(0))
+        }
+        db.query("SELECT amount FROM office_expenses WHERE id = 1").use { c ->
+            assertTrue("Расход офиса должен сохраниться", c.moveToFirst())
+            assertEquals(12000.0, c.getDouble(0), 0.001)
+        }
+
+        // Новые таблицы автомобилей доступны для записи (включая каскадную связь).
+        db.execSQL(
+            "INSERT INTO vehicles (id, name, plate, currency) " +
+                "VALUES (1, 'Mercedes Sprinter', 'ABC 123', 'MDL')"
+        )
+        db.execSQL(
+            "INSERT INTO vehicle_expenses (id, vehicleId, year, month, category, amount, note) " +
+                "VALUES (1, 1, 2026, 7, 'FUEL', 5000.0, 'дизель за июль')"
+        )
+        db.query(
+            "SELECT amount, category FROM vehicle_expenses WHERE vehicleId = 1"
+        ).use { c ->
+            assertTrue("Расход автомобиля должен записаться", c.moveToFirst())
+            assertEquals(5000.0, c.getDouble(0), 0.001)
+            assertEquals("FUEL", c.getString(1))
         }
 
         db.close()

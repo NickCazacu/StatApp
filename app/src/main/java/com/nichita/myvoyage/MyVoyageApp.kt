@@ -4,6 +4,7 @@ import android.app.Application
 import com.nichita.myvoyage.data.db.AppDatabase
 import com.nichita.myvoyage.data.repository.OfficeRepository
 import com.nichita.myvoyage.data.repository.RatesRepository
+import com.nichita.myvoyage.data.repository.VehicleRepository
 import com.nichita.myvoyage.data.repository.VoyageRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +38,11 @@ class MyVoyageApp : Application() {
     /** Офисы и их помесячные расходы. */
     val officeRepository: OfficeRepository by lazy {
         OfficeRepository(dao = database.officeDao())
+    }
+
+    /** Автомобили и их помесячные расходы. */
+    val vehicleRepository: VehicleRepository by lazy {
+        VehicleRepository(dao = database.vehicleDao())
     }
 
     override fun onCreate() {

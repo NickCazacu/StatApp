@@ -5,6 +5,7 @@ import com.nichita.myvoyage.data.model.Category
 import com.nichita.myvoyage.data.model.Currency
 import com.nichita.myvoyage.data.model.FuelType
 import com.nichita.myvoyage.data.model.OfficeCategory
+import com.nichita.myvoyage.data.model.VehicleCategory
 
 /**
  * TypeConverter'ы для Room: enum'ы хранятся как строки.
@@ -35,4 +36,10 @@ class Converters {
 
     @TypeConverter
     fun stringToOfficeCategory(value: String?): OfficeCategory = OfficeCategory.fromName(value)
+
+    @TypeConverter
+    fun vehicleCategoryToString(value: VehicleCategory): String = value.name
+
+    @TypeConverter
+    fun stringToVehicleCategory(value: String?): VehicleCategory = VehicleCategory.fromName(value)
 }

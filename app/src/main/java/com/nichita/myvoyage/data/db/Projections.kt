@@ -3,6 +3,7 @@ package com.nichita.myvoyage.data.db
 import com.nichita.myvoyage.data.model.Category
 import com.nichita.myvoyage.data.model.Currency
 import com.nichita.myvoyage.data.model.OfficeCategory
+import com.nichita.myvoyage.data.model.VehicleCategory
 
 /** Сумма расходов по одной категории (результат GROUP BY в DAO). */
 data class CategorySum(
@@ -54,5 +55,17 @@ data class OfficeCategorySum(
 /** Итоговая сумма по офису за всё время (для списка офисов). */
 data class OfficeTotal(
     val officeId: Long,
+    val total: Double
+)
+
+/** Сумма расходов автомобиля по одной категории. */
+data class VehicleCategorySum(
+    val category: VehicleCategory,
+    val total: Double
+)
+
+/** Итоговая сумма по автомобилю за всё время (для списка автомобилей). */
+data class VehicleTotal(
+    val vehicleId: Long,
     val total: Double
 )

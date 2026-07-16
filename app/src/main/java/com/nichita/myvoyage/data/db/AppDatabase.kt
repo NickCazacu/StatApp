@@ -11,6 +11,8 @@ import com.nichita.myvoyage.data.model.FuelEntry
 import com.nichita.myvoyage.data.model.Office
 import com.nichita.myvoyage.data.model.OfficeExpense
 import com.nichita.myvoyage.data.model.Trip
+import com.nichita.myvoyage.data.model.Vehicle
+import com.nichita.myvoyage.data.model.VehicleExpense
 
 /**
  * Единая офлайн-БД приложения (Room).
@@ -21,9 +23,9 @@ import com.nichita.myvoyage.data.model.Trip
 @Database(
     entities = [
         Trip::class, Expense::class, FuelEntry::class, ExchangeRate::class,
-        Office::class, OfficeExpense::class
+        Office::class, OfficeExpense::class, Vehicle::class, VehicleExpense::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -34,6 +36,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun fuelDao(): FuelDao
     abstract fun exchangeRateDao(): ExchangeRateDao
     abstract fun officeDao(): OfficeDao
+    abstract fun vehicleDao(): VehicleDao
 
     companion object {
         @Volatile

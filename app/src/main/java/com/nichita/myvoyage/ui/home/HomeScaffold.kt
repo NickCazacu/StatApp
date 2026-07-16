@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Business
+import androidx.compose.material.icons.outlined.DirectionsCar
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material3.Icon
@@ -25,11 +26,12 @@ import com.nichita.myvoyage.ui.offices.OfficesScreen
 import com.nichita.myvoyage.ui.stats.OverallStatsScreen
 import com.nichita.myvoyage.ui.tips.OverallTipsScreen
 import com.nichita.myvoyage.ui.trips.TripsScreen
+import com.nichita.myvoyage.ui.vehicles.VehiclesScreen
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 
 /**
- * Корневой экран с нижней навигацией (4 вкладки). Нижняя панель — «жидкое
+ * Корневой экран с нижней навигацией (5 вкладок). Нижняя панель — «жидкое
  * стекло»: размывает прокручиваемый под ней контент (Haze). Поэтому контент
  * рисуется на всю высоту (под панелью), а его нижний отступ передаётся экранам.
  */
@@ -41,7 +43,9 @@ fun HomeScaffold(
     onQuickFuel: (Long) -> Unit,
     onOpenRates: () -> Unit,
     onAddOffice: () -> Unit,
-    onOpenOffice: (Long) -> Unit
+    onOpenOffice: (Long) -> Unit,
+    onAddVehicle: () -> Unit,
+    onOpenVehicle: (Long) -> Unit
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val hazeState = remember { HazeState() }
@@ -68,12 +72,18 @@ fun HomeScaffold(
                 NavigationBarItem(
                     selected = tab == 2,
                     onClick = { tab = 2 },
-                    icon = { Icon(Icons.Outlined.BarChart, contentDescription = "Статистика") },
-                    label = { Text("Статистика") }
+                    icon = { Icon(Icons.Outlined.DirectionsCar, contentDescription = "Авто") },
+                    label = { Text("Авто") }
                 )
                 NavigationBarItem(
                     selected = tab == 3,
                     onClick = { tab = 3 },
+                    icon = { Icon(Icons.Outlined.BarChart, contentDescription = "Статистика") },
+                    label = { Text("Статистика") }
+                )
+                NavigationBarItem(
+                    selected = tab == 4,
+                    onClick = { tab = 4 },
                     icon = { Icon(Icons.Outlined.Lightbulb, contentDescription = "Советы") },
                     label = { Text("Советы") }
                 )
@@ -102,7 +112,12 @@ fun HomeScaffold(
                     onOpenOffice = onOpenOffice,
                     bottomInset = bottomInset
                 )
-                2 -> OverallStatsScreen(onBack = {}, showBack = false, bottomInset = bottomInset)
+                2 -> VehiclesScreen(
+                    onAddVehicle = onAddVehicle,
+                    onOpenVehicle = onOpenVehicle,
+                    bottomInset = bottomInset
+                )
+                3 -> OverallStatsScreen(onBack = {}, showBack = false, bottomInset = bottomInset)
                 else -> OverallTipsScreen(onBack = {}, showBack = false, bottomInset = bottomInset)
             }
         }
