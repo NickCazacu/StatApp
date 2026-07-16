@@ -92,5 +92,46 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
+/**
+ * v3 → v4:
+ *  - новые таблицы `offices` и `office_expenses` — учёт помесячных расходов
+ *    по офисам. Существующие данные пользователя не затрагиваются.
+ */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `offices` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `name` TEXT NOT NULL,
+                `address` TEXT NOT NULL,
+                `currency` TEXT NOT NULL
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `office_expenses` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `officeId` INTEGER NOT NULL,
+                `year` INTEGER NOT NULL,
+                `month` INTEGER NOT NULL,
+                `category` TEXT NOT NULL,
+                `amount` REAL NOT NULL,
+                `note` TEXT NOT NULL,
+                FOREIGN KEY(`officeId`) REFERENCES `offices`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_office_expenses_officeId` ON `office_expenses` (`officeId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_office_expenses_officeId_year_month` " +
+                "ON `office_expenses` (`officeId`, `year`, `month`)"
+        )
+    }
+}
+
 /** Все миграции приложения — передаются в RoomDatabase.Builder. */
-val ALL_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+val ALL_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)

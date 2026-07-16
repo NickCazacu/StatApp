@@ -11,6 +11,11 @@ import com.nichita.myvoyage.ui.expense.ExpenseEditScreen
 import com.nichita.myvoyage.ui.export.ExportScreen
 import com.nichita.myvoyage.ui.fuel.FuelEditScreen
 import com.nichita.myvoyage.ui.home.HomeScaffold
+import com.nichita.myvoyage.ui.offices.OfficeDetailScreen
+import com.nichita.myvoyage.ui.offices.OfficeEditScreen
+import com.nichita.myvoyage.ui.offices.OfficeExpenseEditScreen
+import com.nichita.myvoyage.ui.offices.OfficeStatsScreen
+import com.nichita.myvoyage.ui.offices.OfficeTipsScreen
 import com.nichita.myvoyage.ui.rates.CurrencyRatesScreen
 import com.nichita.myvoyage.ui.stats.StatsScreen
 import com.nichita.myvoyage.ui.tips.TipsScreen
@@ -35,7 +40,9 @@ fun AppNavHost() {
                 onOpenTrip = { id -> navController.navigate(Routes.tripDetail(id)) },
                 onQuickExpense = { id -> navController.navigate(Routes.expenseEdit(id)) },
                 onQuickFuel = { id -> navController.navigate(Routes.fuelEdit(id)) },
-                onOpenRates = { navController.navigate(Routes.currencyRates()) }
+                onOpenRates = { navController.navigate(Routes.currencyRates()) },
+                onAddOffice = { navController.navigate(Routes.officeEdit()) },
+                onOpenOffice = { id -> navController.navigate(Routes.officeDetail(id)) }
             )
         }
 
@@ -133,6 +140,74 @@ fun AppNavHost() {
             )
         ) {
             FuelEditScreen(
+                onBack = { navController.popBackStack() },
+                onSaved = { navController.popBackStack() }
+            )
+        }
+
+        // Создание/редактирование офиса
+        composable(
+            route = Routes.OFFICE_EDIT,
+            arguments = listOf(
+                navArgument(NavArgs.OFFICE_ID) {
+                    type = NavType.LongType
+                    defaultValue = 0L
+                }
+            )
+        ) {
+            OfficeEditScreen(
+                onBack = { navController.popBackStack() },
+                onSaved = { navController.popBackStack() }
+            )
+        }
+
+        // Детали офиса: помесячные расходы, статистика, советы
+        composable(
+            route = Routes.OFFICE_DETAIL,
+            arguments = listOf(navArgument(NavArgs.OFFICE_ID) { type = NavType.LongType })
+        ) { entry ->
+            val officeId = entry.arguments?.getLong(NavArgs.OFFICE_ID) ?: 0L
+            OfficeDetailScreen(
+                onBack = { navController.popBackStack() },
+                onEditOffice = { navController.navigate(Routes.officeEdit(officeId)) },
+                onAddExpense = { navController.navigate(Routes.officeExpenseEdit(officeId)) },
+                onEditExpense = { id ->
+                    navController.navigate(Routes.officeExpenseEdit(officeId, id))
+                },
+                onOpenStats = { navController.navigate(Routes.officeStats(officeId)) },
+                onOpenTips = { navController.navigate(Routes.officeTips(officeId)) },
+                onDeleted = { navController.popBackStack() }
+            )
+        }
+
+        // Статистика офиса
+        composable(
+            route = Routes.OFFICE_STATS,
+            arguments = listOf(navArgument(NavArgs.OFFICE_ID) { type = NavType.LongType })
+        ) {
+            OfficeStatsScreen(onBack = { navController.popBackStack() })
+        }
+
+        // Советы по офису
+        composable(
+            route = Routes.OFFICE_TIPS,
+            arguments = listOf(navArgument(NavArgs.OFFICE_ID) { type = NavType.LongType })
+        ) {
+            OfficeTipsScreen(onBack = { navController.popBackStack() })
+        }
+
+        // Создание/редактирование расхода офиса
+        composable(
+            route = Routes.OFFICE_EXPENSE_EDIT,
+            arguments = listOf(
+                navArgument(NavArgs.OFFICE_ID) { type = NavType.LongType },
+                navArgument(NavArgs.ITEM_ID) {
+                    type = NavType.LongType
+                    defaultValue = 0L
+                }
+            )
+        ) {
+            OfficeExpenseEditScreen(
                 onBack = { navController.popBackStack() },
                 onSaved = { navController.popBackStack() }
             )

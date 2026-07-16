@@ -2,6 +2,7 @@ package com.nichita.myvoyage.data.db
 
 import com.nichita.myvoyage.data.model.Category
 import com.nichita.myvoyage.data.model.Currency
+import com.nichita.myvoyage.data.model.OfficeCategory
 
 /** Сумма расходов по одной категории (результат GROUP BY в DAO). */
 data class CategorySum(
@@ -34,5 +35,24 @@ data class TripTotal(
 data class TripCurrencyTotal(
     val tripId: Long,
     val currency: Currency,
+    val total: Double
+)
+
+/** Итог расходов офиса за один месяц (результат GROUP BY year, month). */
+data class MonthTotal(
+    val year: Int,
+    val month: Int,
+    val total: Double
+)
+
+/** Сумма расходов офиса по одной категории. */
+data class OfficeCategorySum(
+    val category: OfficeCategory,
+    val total: Double
+)
+
+/** Итоговая сумма по офису за всё время (для списка офисов). */
+data class OfficeTotal(
+    val officeId: Long,
     val total: Double
 )

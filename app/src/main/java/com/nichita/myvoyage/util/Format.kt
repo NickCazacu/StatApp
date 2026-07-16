@@ -45,4 +45,18 @@ object Format {
 
     /** Целые километры. */
     fun km(value: Double): String = "${value.roundToInt()} км"
+
+    /** Названия месяцев в именительном падеже (для заголовков «Июль 2026»). */
+    val MONTHS = listOf(
+        "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+        "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
+    )
+
+    /** «Июль 2026» из года и месяца (1..12). */
+    fun monthYear(year: Int, month: Int): String =
+        "${MONTHS.getOrElse(month - 1) { "?" }} $year"
+
+    /** Короткая подпись месяца для оси графика: «07.26». */
+    fun monthShort(year: Int, month: Int): String =
+        String.format(Locale.US, "%02d.%02d", month, year % 100)
 }

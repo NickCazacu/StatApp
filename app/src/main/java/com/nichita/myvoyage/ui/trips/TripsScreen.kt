@@ -99,7 +99,12 @@ fun TripsScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddTrip) {
+            // Контент рисуется под нижней панелью навигации (Haze), поэтому FAB
+            // поднимаем на её высоту — иначе он окажется под вкладками.
+            FloatingActionButton(
+                onClick = onAddTrip,
+                modifier = Modifier.padding(bottom = bottomInset)
+            ) {
                 Text("+", style = MaterialTheme.typography.headlineSmall)
             }
         }

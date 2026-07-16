@@ -4,6 +4,7 @@ import androidx.room.TypeConverter
 import com.nichita.myvoyage.data.model.Category
 import com.nichita.myvoyage.data.model.Currency
 import com.nichita.myvoyage.data.model.FuelType
+import com.nichita.myvoyage.data.model.OfficeCategory
 
 /**
  * TypeConverter'ы для Room: enum'ы хранятся как строки.
@@ -28,4 +29,10 @@ class Converters {
 
     @TypeConverter
     fun stringToFuelType(value: String?): FuelType = FuelType.fromName(value)
+
+    @TypeConverter
+    fun officeCategoryToString(value: OfficeCategory): String = value.name
+
+    @TypeConverter
+    fun stringToOfficeCategory(value: String?): OfficeCategory = OfficeCategory.fromName(value)
 }

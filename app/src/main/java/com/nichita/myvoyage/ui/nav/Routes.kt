@@ -4,6 +4,7 @@ package com.nichita.myvoyage.ui.nav
 object NavArgs {
     const val TRIP_ID = "tripId"
     const val ITEM_ID = "itemId"
+    const val OFFICE_ID = "officeId"
 }
 
 /**
@@ -37,4 +38,22 @@ object Routes {
 
     const val FUEL_EDIT = "trip/{tripId}/fuel?itemId={itemId}"
     fun fuelEdit(tripId: Long, itemId: Long = 0L) = "trip/$tripId/fuel?itemId=$itemId"
+
+    // --- Офисы ---
+
+    const val OFFICE_EDIT = "office_edit?officeId={officeId}"
+    fun officeEdit(officeId: Long = 0L) = "office_edit?officeId=$officeId"
+
+    const val OFFICE_DETAIL = "office/{officeId}"
+    fun officeDetail(officeId: Long) = "office/$officeId"
+
+    const val OFFICE_STATS = "office/{officeId}/stats"
+    fun officeStats(officeId: Long) = "office/$officeId/stats"
+
+    const val OFFICE_TIPS = "office/{officeId}/tips"
+    fun officeTips(officeId: Long) = "office/$officeId/tips"
+
+    const val OFFICE_EXPENSE_EDIT = "office/{officeId}/expense?itemId={itemId}"
+    fun officeExpenseEdit(officeId: Long, itemId: Long = 0L) =
+        "office/$officeId/expense?itemId=$itemId"
 }

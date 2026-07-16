@@ -8,6 +8,8 @@ import androidx.room.TypeConverters
 import com.nichita.myvoyage.data.model.ExchangeRate
 import com.nichita.myvoyage.data.model.Expense
 import com.nichita.myvoyage.data.model.FuelEntry
+import com.nichita.myvoyage.data.model.Office
+import com.nichita.myvoyage.data.model.OfficeExpense
 import com.nichita.myvoyage.data.model.Trip
 
 /**
@@ -17,8 +19,11 @@ import com.nichita.myvoyage.data.model.Trip
  * (важно для производительности на слабых устройствах).
  */
 @Database(
-    entities = [Trip::class, Expense::class, FuelEntry::class, ExchangeRate::class],
-    version = 3,
+    entities = [
+        Trip::class, Expense::class, FuelEntry::class, ExchangeRate::class,
+        Office::class, OfficeExpense::class
+    ],
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -28,6 +33,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
     abstract fun fuelDao(): FuelDao
     abstract fun exchangeRateDao(): ExchangeRateDao
+    abstract fun officeDao(): OfficeDao
 
     companion object {
         @Volatile

@@ -2,6 +2,7 @@ package com.nichita.myvoyage
 
 import android.app.Application
 import com.nichita.myvoyage.data.db.AppDatabase
+import com.nichita.myvoyage.data.repository.OfficeRepository
 import com.nichita.myvoyage.data.repository.RatesRepository
 import com.nichita.myvoyage.data.repository.VoyageRepository
 import kotlinx.coroutines.CoroutineScope
@@ -31,6 +32,11 @@ class MyVoyageApp : Application() {
     /** Курсы валют: онлайн-обновление НБМ + офлайн-кэш. */
     val ratesRepository: RatesRepository by lazy {
         RatesRepository(dao = database.exchangeRateDao())
+    }
+
+    /** Офисы и их помесячные расходы. */
+    val officeRepository: OfficeRepository by lazy {
+        OfficeRepository(dao = database.officeDao())
     }
 
     override fun onCreate() {
