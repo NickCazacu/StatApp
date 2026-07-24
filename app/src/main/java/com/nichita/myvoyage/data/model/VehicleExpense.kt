@@ -41,8 +41,14 @@ data class VehicleExpense(
     /** Категория расхода автомобиля */
     val category: VehicleCategory = VehicleCategory.OTHER,
 
-    /** Сумма в валюте автомобиля */
+    /** Сумма расхода */
     val amount: Double,
+
+    /**
+     * Валюта расхода (по умолчанию совпадает с валютой автомобиля). Итоги
+     * сводятся в валюту авто по курсу НБМ (см. [com.nichita.myvoyage.domain.CurrencyRates]).
+     */
+    val currency: Currency = Currency.MDL,
 
     /** Необязательная заметка */
     val note: String = ""

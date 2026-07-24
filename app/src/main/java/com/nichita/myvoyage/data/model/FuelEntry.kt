@@ -32,8 +32,11 @@ data class FuelEntry(
     /** Дата заправки (epoch millis) */
     val date: Long,
 
-    /** Цена заправки (в валюте рейса) */
+    /** Цена заправки (в валюте [currency]) */
     val cost: Double,
+
+    /** Валюта заправки (может отличаться от валюты рейса) */
+    val currency: Currency = Currency.DEFAULT,
 
     /** Тип топлива */
     val fuelType: FuelType = FuelType.DEFAULT

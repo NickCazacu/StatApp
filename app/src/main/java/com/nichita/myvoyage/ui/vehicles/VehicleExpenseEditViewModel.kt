@@ -6,6 +6,7 @@ import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.nichita.myvoyage.data.model.Currency
 import com.nichita.myvoyage.data.model.VehicleCategory
 import com.nichita.myvoyage.data.model.VehicleExpense
 import com.nichita.myvoyage.data.repository.VehicleRepository
@@ -21,6 +22,7 @@ import java.util.Calendar
 /** Состояние формы расхода автомобиля. */
 data class VehicleExpenseFormState(
     val amount: String = "",
+    val currency: Currency = Currency.MDL,
     val category: VehicleCategory = VehicleCategory.FUEL,
     val year: Int = Calendar.getInstance().get(Calendar.YEAR),
     val month: Int = Calendar.getInstance().get(Calendar.MONTH) + 1,
@@ -46,11 +48,12 @@ class VehicleExpenseEditViewModel(
     val form: StateFlow<VehicleExpenseFormState> = _form.asStateFlow()
 
     init {
-        if (expenseId != 0L) {
-            viewModelScope.launch {
+        viewModelScope.launch {
+            if (expenseId != 0L) {
                 repository.getExpense(expenseId)?.let { e ->
                     _form.value = VehicleExpenseFormState(
                         amount = e.amount.toString(),
+                        currency = e.currency,
                         category = e.category,
                         year = e.year,
                         month = e.month,
@@ -58,12 +61,18 @@ class VehicleExpenseEditViewModel(
                         isEditing = true
                     )
                 }
+            } else {
+                // Для новой траты подставляем валюту автомобиля.
+                repository.getVehicle(vehicleId)?.let { v ->
+                    _form.update { it.copy(currency = v.currency) }
+                }
             }
         }
     }
 
     fun onAmountChange(v: String) =
         _form.update { it.copy(amount = v.filter { c -> c.isDigit() || c == '.' }) }
+    fun onCurrencyChange(v: Currency) = _form.update { it.copy(currency = v) }
     fun onCategoryChange(v: VehicleCategory) = _form.update { it.copy(category = v) }
     fun onYearChange(v: Int) = _form.update { it.copy(year = v) }
     fun onMonthChange(v: Int) = _form.update { it.copy(month = v) }
@@ -81,6 +90,7 @@ class VehicleExpenseEditViewModel(
                     month = s.month,
                     category = s.category,
                     amount = s.amount.toDoubleOrNull() ?: 0.0,
+                    currency = s.currency,
                     note = s.note.trim()
                 )
             )

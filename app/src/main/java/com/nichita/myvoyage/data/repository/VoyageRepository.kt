@@ -63,8 +63,8 @@ class VoyageRepository(
 
     // --- Заправки ---
     fun observeFuel(tripId: Long): Flow<List<FuelEntry>> = fuelDao.observeByTrip(tripId)
-    fun observeFuelTotalsPerTrip(): Flow<List<TripTotal>> = fuelDao.observeFuelTotalsPerTrip()
-    suspend fun getFuelTotalsPerTrip(): List<TripTotal> = fuelDao.getFuelTotalsPerTrip()
+    fun observeFuelTotalsPerTrip(): Flow<List<TripCurrencyTotal>> = fuelDao.observeFuelTotalsPerTrip()
+    suspend fun getFuelTotalsPerTrip(): List<TripCurrencyTotal> = fuelDao.getFuelTotalsPerTrip()
     suspend fun getFuelForTrip(tripId: Long): List<FuelEntry> = fuelDao.getByTrip(tripId)
     suspend fun getAllFuel(): List<FuelEntry> = fuelDao.getAll()
     suspend fun getFuelEntry(id: Long): FuelEntry? = fuelDao.getById(id)

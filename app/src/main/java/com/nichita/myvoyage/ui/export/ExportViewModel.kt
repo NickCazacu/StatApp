@@ -10,10 +10,13 @@ import com.nichita.myvoyage.data.model.Category
 import com.nichita.myvoyage.data.model.Expense
 import com.nichita.myvoyage.data.model.FuelEntry
 import com.nichita.myvoyage.data.model.Trip
+import com.nichita.myvoyage.data.repository.RatesRepository
 import com.nichita.myvoyage.data.repository.VoyageRepository
+import com.nichita.myvoyage.domain.CurrencyRates
 import com.nichita.myvoyage.export.ReportTable
 import com.nichita.myvoyage.export.TripReport
 import com.nichita.myvoyage.ui.nav.NavArgs
+import com.nichita.myvoyage.ui.ratesRepository
 import com.nichita.myvoyage.ui.voyageRepository
 import com.nichita.myvoyage.util.Format
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +28,7 @@ import kotlin.math.roundToInt
 /** Готовит подробный отчёт по рейсу для экспорта в PDF/Word. */
 class ExportViewModel(
     private val repository: VoyageRepository,
+    private val ratesRepository: RatesRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -38,19 +42,30 @@ class ExportViewModel(
             val trip = repository.getTrip(tripId) ?: return@launch
             val expenses = repository.getExpensesForTrip(tripId)
             val fuel = repository.getFuelForTrip(tripId)
-            _report.value = build(trip, expenses, fuel)
+            // Свод разновалютных трат в валюту рейса по курсу НБМ — как на экране рейса.
+            val rates = ratesRepository.currentRates()
+            _report.value = build(trip, expenses, fuel, rates)
         }
     }
 
-    private fun build(trip: Trip, expenses: List<Expense>, fuel: List<FuelEntry>): TripReport {
+    private fun build(
+        trip: Trip,
+        expenses: List<Expense>,
+        fuel: List<FuelEntry>,
+        rates: CurrencyRates
+    ): TripReport {
         val currency = trip.currency
-        val fuelTotal = fuel.sumOf { it.cost }
-        val expenseTotal = expenses.sumOf { it.amount }
+        // И расходы, и заправки сводим в валюту рейса по курсу.
+        val fuelTotal = fuel.sumOf { rates.convert(it.cost, it.currency, currency) }
+        val expenseTotal = expenses.sumOf { rates.convert(it.amount, it.currency, currency) }
         val total = expenseTotal + fuelTotal
 
         // Категории (с учётом топлива), по убыванию.
         val byCategory = HashMap<Category, Double>()
-        expenses.forEach { byCategory[it.category] = (byCategory[it.category] ?: 0.0) + it.amount }
+        expenses.forEach {
+            val converted = rates.convert(it.amount, it.currency, currency)
+            byCategory[it.category] = (byCategory[it.category] ?: 0.0) + converted
+        }
         if (fuelTotal > 0) byCategory[Category.FUEL] = (byCategory[Category.FUEL] ?: 0.0) + fuelTotal
         val categoryRows = byCategory.entries
             .sortedByDescending { it.value }
@@ -69,7 +84,7 @@ class ExportViewModel(
         }
 
         val fuelRows = fuel.sortedBy { it.date }.map {
-            listOf(Format.date(it.date), it.fuelType.title, Format.money(it.cost, currency))
+            listOf(Format.date(it.date), it.fuelType.title, Format.money(it.cost, it.currency))
         }
 
         // Длительность рейса в днях (включительно).
@@ -131,7 +146,9 @@ class ExportViewModel(
 
     companion object {
         val Factory = viewModelFactory {
-            initializer { ExportViewModel(voyageRepository(), createSavedStateHandle()) }
+            initializer {
+                ExportViewModel(voyageRepository(), ratesRepository(), createSavedStateHandle())
+            }
         }
     }
 }

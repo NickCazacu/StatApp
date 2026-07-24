@@ -8,16 +8,20 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.nichita.myvoyage.data.db.MonthTotal
 import com.nichita.myvoyage.data.db.VehicleCategorySum
+import com.nichita.myvoyage.data.model.Currency
 import com.nichita.myvoyage.data.model.Vehicle
+import com.nichita.myvoyage.data.repository.RatesRepository
 import com.nichita.myvoyage.data.repository.VehicleRepository
+import com.nichita.myvoyage.domain.VehicleExpenseMath
 import com.nichita.myvoyage.ui.nav.NavArgs
+import com.nichita.myvoyage.ui.ratesRepository
 import com.nichita.myvoyage.ui.vehicleRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
-/** Состояние экрана статистики автомобиля. */
+/** Состояние экрана статистики автомобиля. Все суммы — в валюте авто (курс НБМ). */
 data class VehicleStatsState(
     val vehicle: Vehicle? = null,
     val total: Double = 0.0,
@@ -48,6 +52,7 @@ data class VehicleStatsState(
 /** ViewModel статистики автомобиля: динамика по месяцам и разбивка по категориям. */
 class VehicleStatsViewModel(
     repository: VehicleRepository,
+    ratesRepository: RatesRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -56,21 +61,27 @@ class VehicleStatsViewModel(
     val uiState: StateFlow<VehicleStatsState> =
         combine(
             repository.observeVehicle(vehicleId),
-            repository.observeTotal(vehicleId),
-            repository.observeMonthTotals(vehicleId),
-            repository.observeCategorySums(vehicleId)
-        ) { vehicle, total, months, categories ->
+            repository.observeExpenses(vehicleId),
+            ratesRepository.observeRates()
+        ) { vehicle, expenses, rates ->
+            val base = vehicle?.currency ?: Currency.MDL
             VehicleStatsState(
                 vehicle = vehicle,
-                total = total,
-                monthTotals = months,
-                categorySums = categories
+                total = VehicleExpenseMath.total(expenses, rates, base),
+                monthTotals = VehicleExpenseMath.monthTotals(expenses, rates, base),
+                categorySums = VehicleExpenseMath.categorySums(expenses, rates, base)
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), VehicleStatsState())
 
     companion object {
         val Factory = viewModelFactory {
-            initializer { VehicleStatsViewModel(vehicleRepository(), createSavedStateHandle()) }
+            initializer {
+                VehicleStatsViewModel(
+                    vehicleRepository(),
+                    ratesRepository(),
+                    createSavedStateHandle()
+                )
+            }
         }
     }
 }

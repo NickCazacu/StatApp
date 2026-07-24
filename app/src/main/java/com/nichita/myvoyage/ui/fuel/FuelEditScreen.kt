@@ -21,9 +21,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.nichita.myvoyage.data.model.Currency
 import com.nichita.myvoyage.data.model.FuelType
 import com.nichita.myvoyage.ui.components.DateField
 import com.nichita.myvoyage.ui.components.EnumDropdown
+import com.nichita.myvoyage.util.Format
 
 /** Экран добавления/редактирования заправки. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -70,6 +72,19 @@ fun FuelEditScreen(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
+
+            EnumDropdown(
+                label = "Валюта",
+                options = Currency.entries,
+                selected = form.currency,
+                optionLabel = { "${it.code} (${it.symbol})" },
+                onSelected = viewModel::onCurrencyChange
+            )
+
+            // Если валюта заправки отличается от валюты рейса — показываем пересчёт.
+            form.convertedToTrip?.let { converted ->
+                Text("≈ ${Format.money(converted, form.tripCurrency)} по курсу НБМ")
+            }
 
             EnumDropdown(
                 label = "Тип топлива",

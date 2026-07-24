@@ -54,7 +54,7 @@ class TipsViewModel(
 
             // --- Текущий рейс ---
             val currentFuel = repository.getFuelForTrip(tripId)
-            val currentFuelStats = FuelCalculator.calculate(currentFuel)
+            val currentFuelStats = FuelCalculator.calculate(currentFuel, rates, tripCurrency)
             val currentExpenseCatSums = convertCategorySums(
                 repository.getCurrencyCategorySumsForTrip(tripId), tripCurrency, rates
             )
@@ -62,19 +62,17 @@ class TipsViewModel(
             val currentTotal = currentCatSums.sumOf { it.total }
 
             // --- История (другие рейсы), итоги в валюте текущего рейса ---
-            val tripCurrencyById = repository.getAllTrips().associate { it.id to it.currency }
-            val fuelTotals = repository.getFuelTotalsPerTrip().associate { it.tripId to it.total }
+            val fuelTotals = repository.getFuelTotalsPerTrip()
             val combinedTotals = HashMap<Long, Double>()
             // Расходы: конвертируем каждую валютную группу рейса в валюту текущего рейса.
             repository.getCurrencyTotalsPerTrip().forEach { row ->
                 combinedTotals[row.tripId] = (combinedTotals[row.tripId] ?: 0.0) +
                     rates.convert(row.total, row.currency, tripCurrency)
             }
-            // Топливо хранится в валюте своего рейса — переводим в валюту текущего.
-            fuelTotals.forEach { (id, cost) ->
-                val own = tripCurrencyById[id] ?: tripCurrency
-                combinedTotals[id] = (combinedTotals[id] ?: 0.0) +
-                    rates.convert(cost, own, tripCurrency)
+            // Топливо: каждая валютная группа заправок — в валюту текущего рейса.
+            fuelTotals.forEach { row ->
+                combinedTotals[row.tripId] = (combinedTotals[row.tripId] ?: 0.0) +
+                    rates.convert(row.total, row.currency, tripCurrency)
             }
             val otherTotals = combinedTotals.filterKeys { it != tripId }.values.toList()
 
@@ -82,8 +80,8 @@ class TipsViewModel(
             val allExpenseCatSums = convertCategorySums(
                 repository.getCategorySumsByCurrency(), tripCurrency, rates
             )
-            val allFuelCost = fuelTotals.entries.sumOf { (id, cost) ->
-                rates.convert(cost, tripCurrencyById[id] ?: tripCurrency, tripCurrency)
+            val allFuelCost = fuelTotals.sumOf {
+                rates.convert(it.total, it.currency, tripCurrency)
             }
             val allCatSums = mergeFuel(allExpenseCatSums, allFuelCost)
 

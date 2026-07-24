@@ -25,7 +25,7 @@ import com.nichita.myvoyage.data.model.VehicleExpense
         Trip::class, Expense::class, FuelEntry::class, ExchangeRate::class,
         Office::class, OfficeExpense::class, Vehicle::class, VehicleExpense::class
     ],
-    version = 5,
+    version = 7,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

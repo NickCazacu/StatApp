@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.CurrencyExchange
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.LocalGasStation
@@ -388,13 +389,20 @@ private fun CarouselCard(item: TripListItem, onClick: () -> Unit) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = trip.destination,
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = trip.destination,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (trip.endDate != null) {
+                    Spacer(Modifier.width(6.dp))
+                    CompletedBadge()
+                }
+            }
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -459,12 +467,19 @@ private fun TripCard(item: TripListItem, onClick: () -> Unit) {
             Spacer(Modifier.width(12.dp))
 
             Column(Modifier.weight(1f)) {
-                Text(
-                    text = trip.destination,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = trip.destination,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    if (trip.endDate != null) {
+                        Spacer(Modifier.width(6.dp))
+                        CompletedBadge()
+                    }
+                }
                 val dates = if (trip.endDate != null)
                     "${Format.date(trip.startDate)} — ${Format.date(trip.endDate)}"
                 else
@@ -494,6 +509,27 @@ private fun TripCard(item: TripListItem, onClick: () -> Unit) {
         }
     }
 }
+
+/** Зелёная галочка завершённого рейса — в мягком тоне палитры. */
+@Composable
+private fun CompletedBadge() {
+    Box(
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(CompletedGreen.copy(alpha = 0.22f))
+            .padding(2.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Filled.CheckCircle,
+            contentDescription = "Рейс завершён",
+            tint = CompletedGreen,
+            modifier = Modifier.size(16.dp)
+        )
+    }
+}
+
+/** Приглушённый зелёный — в тон общей «туманной» палитре. */
+private val CompletedGreen = Color(0xFF7FA98C)
 
 /** Первая буква направления для аватара. */
 private fun avatarChar(text: String): String =

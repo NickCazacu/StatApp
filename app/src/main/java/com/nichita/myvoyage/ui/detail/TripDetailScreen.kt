@@ -173,7 +173,8 @@ fun TripDetailScreen(
                 items(state.fuel, key = { "f${it.id}" }) { entry ->
                     FuelRow(
                         entry = entry,
-                        currency = currency,
+                        tripCurrency = currency,
+                        rates = state.rates,
                         onClick = { onEditFuel(entry.id) },
                         onDelete = { viewModel.deleteFuel(entry) }
                     )
@@ -241,7 +242,13 @@ private fun ExpenseRow(
 }
 
 @Composable
-private fun FuelRow(entry: FuelEntry, currency: Currency, onClick: () -> Unit, onDelete: () -> Unit) {
+private fun FuelRow(
+    entry: FuelEntry,
+    tripCurrency: Currency,
+    rates: com.nichita.myvoyage.domain.CurrencyRates,
+    onClick: () -> Unit,
+    onDelete: () -> Unit
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
@@ -260,7 +267,20 @@ private fun FuelRow(entry: FuelEntry, currency: Currency, onClick: () -> Unit, o
                 style = MaterialTheme.typography.bodySmall
             )
         }
-        Text(Format.money(entry.cost, currency), style = MaterialTheme.typography.bodyMedium)
+        Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
+            Text(
+                Format.money(entry.cost, entry.currency),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            // Если валюта заправки отличается от валюты рейса — показываем пересчёт.
+            if (entry.currency != tripCurrency) {
+                val converted = rates.convert(entry.cost, entry.currency, tripCurrency)
+                Text(
+                    "≈ ${Format.money(converted, tripCurrency)}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
         TextButton(onClick = onClick) { Text("Изм.") }
         TextButton(onClick = onDelete) { Text("Удал.") }
     }

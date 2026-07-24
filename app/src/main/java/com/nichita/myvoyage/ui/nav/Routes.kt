@@ -54,6 +54,9 @@ object Routes {
     const val OFFICE_TIPS = "office/{officeId}/tips"
     fun officeTips(officeId: Long) = "office/$officeId/tips"
 
+    const val OFFICE_EXPORT = "office/{officeId}/export"
+    fun officeExport(officeId: Long) = "office/$officeId/export"
+
     const val OFFICE_EXPENSE_EDIT = "office/{officeId}/expense?itemId={itemId}"
     fun officeExpenseEdit(officeId: Long, itemId: Long = 0L) =
         "office/$officeId/expense?itemId=$itemId"
@@ -71,6 +74,9 @@ object Routes {
 
     const val VEHICLE_TIPS = "vehicle/{vehicleId}/tips"
     fun vehicleTips(vehicleId: Long) = "vehicle/$vehicleId/tips"
+
+    const val VEHICLE_EXPORT = "vehicle/{vehicleId}/export"
+    fun vehicleExport(vehicleId: Long) = "vehicle/$vehicleId/export"
 
     const val VEHICLE_EXPENSE_EDIT = "vehicle/{vehicleId}/expense?itemId={itemId}"
     fun vehicleExpenseEdit(vehicleId: Long, itemId: Long = 0L) =

@@ -23,6 +23,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.nichita.myvoyage.data.model.Currency
 import com.nichita.myvoyage.data.model.OfficeCategory
 import com.nichita.myvoyage.ui.components.EnumDropdown
 import com.nichita.myvoyage.util.Format
@@ -80,6 +81,14 @@ fun OfficeExpenseEditScreen(
                 selected = form.category,
                 optionLabel = { it.title },
                 onSelected = viewModel::onCategoryChange
+            )
+
+            EnumDropdown(
+                label = "Валюта",
+                options = Currency.entries,
+                selected = form.currency,
+                optionLabel = { "${it.code} (${it.symbol})" },
+                onSelected = viewModel::onCurrencyChange
             )
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

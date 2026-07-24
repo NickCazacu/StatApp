@@ -52,9 +52,13 @@ data class OfficeCategorySum(
     val total: Double
 )
 
-/** Итоговая сумма по офису за всё время (для списка офисов). */
-data class OfficeTotal(
+/**
+ * Сумма расходов офиса в разрезе валюты траты (для списка офисов).
+ * Свод в валюту офиса делается в Kotlin по курсу НБМ.
+ */
+data class OfficeCurrencyTotal(
     val officeId: Long,
+    val currency: Currency,
     val total: Double
 )
 
@@ -64,8 +68,12 @@ data class VehicleCategorySum(
     val total: Double
 )
 
-/** Итоговая сумма по автомобилю за всё время (для списка автомобилей). */
-data class VehicleTotal(
+/**
+ * Сумма расходов автомобиля в разрезе валюты траты (для списка автомобилей).
+ * Свод в валюту авто делается в Kotlin по курсу НБМ.
+ */
+data class VehicleCurrencyTotal(
     val vehicleId: Long,
+    val currency: Currency,
     val total: Double
 )

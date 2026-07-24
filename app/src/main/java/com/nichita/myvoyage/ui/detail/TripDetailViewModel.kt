@@ -55,11 +55,11 @@ class TripDetailViewModel(
             ratesRepository.observeRates()
         ) { trip, expenses, fuel, rates ->
             val tripCurrency = trip?.currency ?: Currency.DEFAULT
-            // Расходы сводим в валюту рейса по курсу; заправки уже в валюте рейса.
+            // И расходы, и заправки сводим в валюту рейса по курсу.
             val expensesTotal = expenses.sumOf {
                 rates.convert(it.amount, it.currency, tripCurrency)
             }
-            val fuelCost = fuel.sumOf { it.cost }
+            val fuelCost = fuel.sumOf { rates.convert(it.cost, it.currency, tripCurrency) }
             TripDetailUiState(trip, expenses, fuel, expensesTotal + fuelCost, rates)
         }.stateIn(
             scope = viewModelScope,

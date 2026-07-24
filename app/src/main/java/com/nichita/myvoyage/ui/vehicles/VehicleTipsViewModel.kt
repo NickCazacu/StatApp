@@ -6,12 +6,15 @@ import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.nichita.myvoyage.data.repository.RatesRepository
 import com.nichita.myvoyage.data.repository.VehicleRepository
 import com.nichita.myvoyage.domain.Tip
 import com.nichita.myvoyage.domain.TipSeverity
+import com.nichita.myvoyage.domain.VehicleExpenseMath
 import com.nichita.myvoyage.domain.VehicleTipsAnalyzer
 import com.nichita.myvoyage.domain.VehicleTipsInput
 import com.nichita.myvoyage.ui.nav.NavArgs
+import com.nichita.myvoyage.ui.ratesRepository
 import com.nichita.myvoyage.ui.vehicleRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +24,7 @@ import kotlinx.coroutines.launch
 /** ViewModel советов по автомобилю: собирает данные и запускает rule-based анализ. */
 class VehicleTipsViewModel(
     private val repository: VehicleRepository,
+    private val ratesRepository: RatesRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -42,7 +46,10 @@ class VehicleTipsViewModel(
                 )
                 return@launch
             }
-            val months = repository.getMonthTotals(vehicleId)
+            // Свод разновалютных трат в валюту автомобиля по курсу НБМ.
+            val expenses = repository.getExpenses(vehicleId)
+            val rates = ratesRepository.currentRates()
+            val months = VehicleExpenseMath.monthTotals(expenses, rates, vehicle.currency)
             if (months.isEmpty()) {
                 _tips.value = listOf(
                     Tip(
@@ -58,7 +65,7 @@ class VehicleTipsViewModel(
                 VehicleTipsInput(
                     vehicle = vehicle,
                     monthTotals = months,
-                    categorySums = repository.getCategorySums(vehicleId)
+                    categorySums = VehicleExpenseMath.categorySums(expenses, rates, vehicle.currency)
                 )
             )
         }
@@ -66,7 +73,13 @@ class VehicleTipsViewModel(
 
     companion object {
         val Factory = viewModelFactory {
-            initializer { VehicleTipsViewModel(vehicleRepository(), createSavedStateHandle()) }
+            initializer {
+                VehicleTipsViewModel(
+                    vehicleRepository(),
+                    ratesRepository(),
+                    createSavedStateHandle()
+                )
+            }
         }
     }
 }

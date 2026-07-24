@@ -174,6 +174,128 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
     }
 }
 
+/**
+ * v5 → v6:
+ *  - `office_expenses` и `vehicle_expenses`: новая колонка `currency` — валюта
+ *    конкретной траты (для конвертации в базовую валюту по курсу НБМ).
+ *    Существующим тратам проставляется валюта их офиса/автомобиля.
+ *    Приём «create → copy → drop → rename» — как в остальных миграциях.
+ */
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // --- office_expenses: + currency (из родительского офиса) ---
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `office_expenses_new` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `officeId` INTEGER NOT NULL,
+                `year` INTEGER NOT NULL,
+                `month` INTEGER NOT NULL,
+                `category` TEXT NOT NULL,
+                `amount` REAL NOT NULL,
+                `currency` TEXT NOT NULL,
+                `note` TEXT NOT NULL,
+                FOREIGN KEY(`officeId`) REFERENCES `offices`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            INSERT INTO `office_expenses_new`
+                (`id`, `officeId`, `year`, `month`, `category`, `amount`, `currency`, `note`)
+            SELECT e.`id`, e.`officeId`, e.`year`, e.`month`, e.`category`, e.`amount`,
+                   COALESCE(o.`currency`, 'MDL'), e.`note`
+            FROM `office_expenses` e
+            LEFT JOIN `offices` o ON e.`officeId` = o.`id`
+            """.trimIndent()
+        )
+        db.execSQL("DROP TABLE `office_expenses`")
+        db.execSQL("ALTER TABLE `office_expenses_new` RENAME TO `office_expenses`")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_office_expenses_officeId` ON `office_expenses` (`officeId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_office_expenses_officeId_year_month` " +
+                "ON `office_expenses` (`officeId`, `year`, `month`)"
+        )
+
+        // --- vehicle_expenses: + currency (из родительского автомобиля) ---
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `vehicle_expenses_new` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `vehicleId` INTEGER NOT NULL,
+                `year` INTEGER NOT NULL,
+                `month` INTEGER NOT NULL,
+                `category` TEXT NOT NULL,
+                `amount` REAL NOT NULL,
+                `currency` TEXT NOT NULL,
+                `note` TEXT NOT NULL,
+                FOREIGN KEY(`vehicleId`) REFERENCES `vehicles`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            INSERT INTO `vehicle_expenses_new`
+                (`id`, `vehicleId`, `year`, `month`, `category`, `amount`, `currency`, `note`)
+            SELECT e.`id`, e.`vehicleId`, e.`year`, e.`month`, e.`category`, e.`amount`,
+                   COALESCE(v.`currency`, 'MDL'), e.`note`
+            FROM `vehicle_expenses` e
+            LEFT JOIN `vehicles` v ON e.`vehicleId` = v.`id`
+            """.trimIndent()
+        )
+        db.execSQL("DROP TABLE `vehicle_expenses`")
+        db.execSQL("ALTER TABLE `vehicle_expenses_new` RENAME TO `vehicle_expenses`")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_vehicle_expenses_vehicleId` ON `vehicle_expenses` (`vehicleId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_vehicle_expenses_vehicleId_year_month` " +
+                "ON `vehicle_expenses` (`vehicleId`, `year`, `month`)"
+        )
+    }
+}
+
+/**
+ * v6 → v7:
+ *  - `fuel_entries`: новая колонка `currency` — валюта конкретной заправки
+ *    (для конвертации в валюту рейса по курсу НБМ, как у расходов).
+ *    Существующим заправкам проставляется валюта их рейса.
+ *    Приём «create → copy → drop → rename» — как в остальных миграциях.
+ */
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `fuel_entries_new` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `tripId` INTEGER NOT NULL,
+                `date` INTEGER NOT NULL,
+                `cost` REAL NOT NULL,
+                `currency` TEXT NOT NULL,
+                `fuelType` TEXT NOT NULL,
+                FOREIGN KEY(`tripId`) REFERENCES `trips`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            INSERT INTO `fuel_entries_new` (`id`, `tripId`, `date`, `cost`, `currency`, `fuelType`)
+            SELECT f.`id`, f.`tripId`, f.`date`, f.`cost`,
+                   COALESCE(t.`currency`, 'EUR'), f.`fuelType`
+            FROM `fuel_entries` f
+            LEFT JOIN `trips` t ON f.`tripId` = t.`id`
+            """.trimIndent()
+        )
+        db.execSQL("DROP TABLE `fuel_entries`")
+        db.execSQL("ALTER TABLE `fuel_entries_new` RENAME TO `fuel_entries`")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_fuel_entries_tripId` ON `fuel_entries` (`tripId`)"
+        )
+    }
+}
+
 /** Все миграции приложения — передаются в RoomDatabase.Builder. */
 val ALL_MIGRATIONS: Array<Migration> =
-    arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+    arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)

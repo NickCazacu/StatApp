@@ -14,6 +14,7 @@ import com.nichita.myvoyage.ui.home.HomeScaffold
 import com.nichita.myvoyage.ui.offices.OfficeDetailScreen
 import com.nichita.myvoyage.ui.offices.OfficeEditScreen
 import com.nichita.myvoyage.ui.offices.OfficeExpenseEditScreen
+import com.nichita.myvoyage.ui.offices.OfficeExportScreen
 import com.nichita.myvoyage.ui.offices.OfficeStatsScreen
 import com.nichita.myvoyage.ui.offices.OfficeTipsScreen
 import com.nichita.myvoyage.ui.rates.CurrencyRatesScreen
@@ -23,6 +24,7 @@ import com.nichita.myvoyage.ui.trips.TripEditScreen
 import com.nichita.myvoyage.ui.vehicles.VehicleDetailScreen
 import com.nichita.myvoyage.ui.vehicles.VehicleEditScreen
 import com.nichita.myvoyage.ui.vehicles.VehicleExpenseEditScreen
+import com.nichita.myvoyage.ui.vehicles.VehicleExportScreen
 import com.nichita.myvoyage.ui.vehicles.VehicleStatsScreen
 import com.nichita.myvoyage.ui.vehicles.VehicleTipsScreen
 
@@ -183,8 +185,17 @@ fun AppNavHost() {
                 },
                 onOpenStats = { navController.navigate(Routes.officeStats(officeId)) },
                 onOpenTips = { navController.navigate(Routes.officeTips(officeId)) },
+                onOpenExport = { navController.navigate(Routes.officeExport(officeId)) },
                 onDeleted = { navController.popBackStack() }
             )
+        }
+
+        // Экспорт отчёта по офису (PDF/Word/Excel)
+        composable(
+            route = Routes.OFFICE_EXPORT,
+            arguments = listOf(navArgument(NavArgs.OFFICE_ID) { type = NavType.LongType })
+        ) {
+            OfficeExportScreen(onBack = { navController.popBackStack() })
         }
 
         // Статистика офиса
@@ -251,8 +262,17 @@ fun AppNavHost() {
                 },
                 onOpenStats = { navController.navigate(Routes.vehicleStats(vehicleId)) },
                 onOpenTips = { navController.navigate(Routes.vehicleTips(vehicleId)) },
+                onOpenExport = { navController.navigate(Routes.vehicleExport(vehicleId)) },
                 onDeleted = { navController.popBackStack() }
             )
+        }
+
+        // Экспорт отчёта по автомобилю (PDF/Word/Excel)
+        composable(
+            route = Routes.VEHICLE_EXPORT,
+            arguments = listOf(navArgument(NavArgs.VEHICLE_ID) { type = NavType.LongType })
+        ) {
+            VehicleExportScreen(onBack = { navController.popBackStack() })
         }
 
         // Статистика автомобиля

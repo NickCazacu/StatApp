@@ -10,7 +10,12 @@ import com.nichita.myvoyage.data.model.Vehicle
 import com.nichita.myvoyage.data.model.VehicleExpense
 import kotlinx.coroutines.flow.Flow
 
-/** Доступ к автомобилям и их помесячным расходам. Агрегации считаются в SQL. */
+/**
+ * Доступ к автомобилям и их помесячным расходам.
+ *
+ * Суммы в SQL считаются только в разрезе валюты траты: складывать разные
+ * валюты нельзя, свод в валюту автомобиля делается в Kotlin по курсу НБМ.
+ */
 @Dao
 interface VehicleDao {
 
@@ -46,70 +51,31 @@ interface VehicleDao {
     )
     fun observeExpenses(vehicleId: Long): Flow<List<VehicleExpense>>
 
+    /** То же разово (для советов/экспорта). */
+    @Query(
+        """
+        SELECT * FROM vehicle_expenses
+        WHERE vehicleId = :vehicleId
+        ORDER BY year DESC, month DESC, id DESC
+        """
+    )
+    suspend fun getExpenses(vehicleId: Long): List<VehicleExpense>
+
     @Query("SELECT * FROM vehicle_expenses WHERE id = :id LIMIT 1")
     suspend fun getExpenseById(id: Long): VehicleExpense?
 
-    /** Общая сумма расходов автомобиля за всё время. */
-    @Query("SELECT COALESCE(SUM(amount), 0) FROM vehicle_expenses WHERE vehicleId = :vehicleId")
-    fun observeTotal(vehicleId: Long): Flow<Double>
-
-    /** Итоги по всем автомобилям, реактивно (для списка). */
+    /**
+     * Итоги по всем автомобилям в разрезе валюты траты (для списка).
+     * Разновалютные суммы сводятся в валюту авто уже в Kotlin по курсу НБМ.
+     */
     @Query(
         """
-        SELECT vehicleId AS vehicleId, SUM(amount) AS total
+        SELECT vehicleId AS vehicleId, currency AS currency, SUM(amount) AS total
         FROM vehicle_expenses
-        GROUP BY vehicleId
+        GROUP BY vehicleId, currency
         """
     )
-    fun observeTotalsPerVehicle(): Flow<List<VehicleTotal>>
-
-    /** Помесячные итоги автомобиля, хронологически (для графика динамики). */
-    @Query(
-        """
-        SELECT year AS year, month AS month, SUM(amount) AS total
-        FROM vehicle_expenses
-        WHERE vehicleId = :vehicleId
-        GROUP BY year, month
-        ORDER BY year ASC, month ASC
-        """
-    )
-    fun observeMonthTotals(vehicleId: Long): Flow<List<MonthTotal>>
-
-    /** То же разово (для анализа советов). */
-    @Query(
-        """
-        SELECT year AS year, month AS month, SUM(amount) AS total
-        FROM vehicle_expenses
-        WHERE vehicleId = :vehicleId
-        GROUP BY year, month
-        ORDER BY year ASC, month ASC
-        """
-    )
-    suspend fun getMonthTotals(vehicleId: Long): List<MonthTotal>
-
-    /** Разбивка расходов автомобиля по категориям (для статистики/советов). */
-    @Query(
-        """
-        SELECT category AS category, SUM(amount) AS total
-        FROM vehicle_expenses
-        WHERE vehicleId = :vehicleId
-        GROUP BY category
-        ORDER BY total DESC
-        """
-    )
-    fun observeCategorySums(vehicleId: Long): Flow<List<VehicleCategorySum>>
-
-    /** То же разово (для анализа советов). */
-    @Query(
-        """
-        SELECT category AS category, SUM(amount) AS total
-        FROM vehicle_expenses
-        WHERE vehicleId = :vehicleId
-        GROUP BY category
-        ORDER BY total DESC
-        """
-    )
-    suspend fun getCategorySums(vehicleId: Long): List<VehicleCategorySum>
+    fun observeCurrencyTotalsPerVehicle(): Flow<List<VehicleCurrencyTotal>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertExpense(expense: VehicleExpense): Long

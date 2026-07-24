@@ -34,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.nichita.myvoyage.data.model.Currency
 import com.nichita.myvoyage.data.model.OfficeExpense
+import com.nichita.myvoyage.domain.CurrencyRates
 import com.nichita.myvoyage.util.Format
 
 /** Экран деталей офиса: итог, действия и расходы по месяцам. */
@@ -46,6 +47,7 @@ fun OfficeDetailScreen(
     onEditExpense: (Long) -> Unit,
     onOpenStats: () -> Unit,
     onOpenTips: () -> Unit,
+    onOpenExport: () -> Unit,
     onDeleted: () -> Unit,
     viewModel: OfficeDetailViewModel = viewModel(factory = OfficeDetailViewModel.Factory)
 ) {
@@ -124,6 +126,9 @@ fun OfficeDetailScreen(
                     OutlinedButton(onClick = onOpenTips, modifier = Modifier.weight(1f)) {
                         Text("Советы")
                     }
+                    OutlinedButton(onClick = onOpenExport, modifier = Modifier.weight(1f)) {
+                        Text("Экспорт")
+                    }
                 }
             }
 
@@ -163,7 +168,8 @@ fun OfficeDetailScreen(
                 items(group.items, key = { it.id }) { expense ->
                     ExpenseRow(
                         expense = expense,
-                        currency = currency,
+                        baseCurrency = currency,
+                        rates = state.rates,
                         onClick = { onEditExpense(expense.id) },
                         onDelete = { viewModel.deleteExpense(expense) }
                     )
@@ -191,7 +197,8 @@ fun OfficeDetailScreen(
 @Composable
 private fun ExpenseRow(
     expense: OfficeExpense,
-    currency: Currency,
+    baseCurrency: Currency,
+    rates: CurrencyRates,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -217,10 +224,22 @@ private fun ExpenseRow(
                     )
                 }
             }
-            Text(
-                Format.money(expense.amount, currency),
-                style = MaterialTheme.typography.bodyLarge
-            )
+            // Сумма — в валюте самой траты; итоги месяца сведены в валюту офиса.
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    Format.money(expense.amount, expense.currency),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                // Если валюта траты отличается от валюты офиса — показываем пересчёт.
+                if (expense.currency != baseCurrency) {
+                    val converted =
+                        rates.convert(expense.amount, expense.currency, baseCurrency)
+                    Text(
+                        "≈ ${Format.money(converted, baseCurrency)}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
             TextButton(onClick = onDelete) { Text("Удал.") }
         }
     }

@@ -6,6 +6,7 @@ import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.nichita.myvoyage.data.model.Currency
 import com.nichita.myvoyage.data.model.OfficeCategory
 import com.nichita.myvoyage.data.model.OfficeExpense
 import com.nichita.myvoyage.data.repository.OfficeRepository
@@ -21,6 +22,7 @@ import java.util.Calendar
 /** Состояние формы расхода офиса. */
 data class OfficeExpenseFormState(
     val amount: String = "",
+    val currency: Currency = Currency.MDL,
     val category: OfficeCategory = OfficeCategory.RENT,
     val year: Int = Calendar.getInstance().get(Calendar.YEAR),
     val month: Int = Calendar.getInstance().get(Calendar.MONTH) + 1,
@@ -46,11 +48,12 @@ class OfficeExpenseEditViewModel(
     val form: StateFlow<OfficeExpenseFormState> = _form.asStateFlow()
 
     init {
-        if (expenseId != 0L) {
-            viewModelScope.launch {
+        viewModelScope.launch {
+            if (expenseId != 0L) {
                 repository.getExpense(expenseId)?.let { e ->
                     _form.value = OfficeExpenseFormState(
                         amount = e.amount.toString(),
+                        currency = e.currency,
                         category = e.category,
                         year = e.year,
                         month = e.month,
@@ -58,12 +61,18 @@ class OfficeExpenseEditViewModel(
                         isEditing = true
                     )
                 }
+            } else {
+                // Для новой траты подставляем валюту офиса.
+                repository.getOffice(officeId)?.let { o ->
+                    _form.update { it.copy(currency = o.currency) }
+                }
             }
         }
     }
 
     fun onAmountChange(v: String) =
         _form.update { it.copy(amount = v.filter { c -> c.isDigit() || c == '.' }) }
+    fun onCurrencyChange(v: Currency) = _form.update { it.copy(currency = v) }
     fun onCategoryChange(v: OfficeCategory) = _form.update { it.copy(category = v) }
     fun onYearChange(v: Int) = _form.update { it.copy(year = v) }
     fun onMonthChange(v: Int) = _form.update { it.copy(month = v) }
@@ -81,6 +90,7 @@ class OfficeExpenseEditViewModel(
                     month = s.month,
                     category = s.category,
                     amount = s.amount.toDoubleOrNull() ?: 0.0,
+                    currency = s.currency,
                     note = s.note.trim()
                 )
             )

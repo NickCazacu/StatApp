@@ -7,7 +7,9 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.nichita.myvoyage.data.db.CategorySum
 import com.nichita.myvoyage.data.model.Category
 import com.nichita.myvoyage.data.model.Currency
+import com.nichita.myvoyage.data.repository.RatesRepository
 import com.nichita.myvoyage.data.repository.VoyageRepository
+import com.nichita.myvoyage.ui.ratesRepository
 import com.nichita.myvoyage.ui.voyageRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -39,26 +41,31 @@ data class OverallStatsUiState(
  * разбивка по категориям считаются отдельно для каждой валюты рейса.
  */
 class OverallStatsViewModel(
-    repository: VoyageRepository
+    repository: VoyageRepository,
+    ratesRepository: RatesRepository
 ) : ViewModel() {
 
     val uiState: StateFlow<OverallStatsUiState> =
         combine(
             repository.observeTrips(),
-            repository.observeTotalsPerTrip(),
+            repository.observeCurrencyTotalsPerTrip(),
             repository.observeFuelTotalsPerTrip(),
-            repository.observeCategorySumsByCurrency()
-        ) { trips, expenseTotals, fuelTotals, catByCurrency ->
-            val expenseByTrip = expenseTotals.associate { it.tripId to it.total }
-            val fuelByTrip = fuelTotals.associate { it.tripId to it.total }
-
+            repository.observeCategorySumsByCurrency(),
+            ratesRepository.observeRates()
+        ) { trips, expenseTotals, fuelTotals, catByCurrency, rates ->
             // Итог и количество рейсов по каждой валюте + стоимость топлива по валюте.
             val spentByCurrency = HashMap<Currency, Double>()
             val tripsByCurrency = HashMap<Currency, Int>()
             val fuelByCurrency = HashMap<Currency, Double>()
             trips.forEach { t ->
-                val fuel = fuelByTrip[t.id] ?: 0.0
-                val spent = (expenseByTrip[t.id] ?: 0.0) + fuel
+                // Разновалютные расходы и заправки рейса сводим в его валюту по курсу.
+                val expenses = expenseTotals
+                    .filter { it.tripId == t.id }
+                    .sumOf { rates.convert(it.total, it.currency, t.currency) }
+                val fuel = fuelTotals
+                    .filter { it.tripId == t.id }
+                    .sumOf { rates.convert(it.total, it.currency, t.currency) }
+                val spent = expenses + fuel
                 spentByCurrency[t.currency] = (spentByCurrency[t.currency] ?: 0.0) + spent
                 tripsByCurrency[t.currency] = (tripsByCurrency[t.currency] ?: 0) + 1
                 fuelByCurrency[t.currency] = (fuelByCurrency[t.currency] ?: 0.0) + fuel
@@ -97,7 +104,7 @@ class OverallStatsViewModel(
 
     companion object {
         val Factory = viewModelFactory {
-            initializer { OverallStatsViewModel(voyageRepository()) }
+            initializer { OverallStatsViewModel(voyageRepository(), ratesRepository()) }
         }
     }
 }

@@ -41,8 +41,14 @@ data class OfficeExpense(
     /** Категория офисного расхода */
     val category: OfficeCategory = OfficeCategory.OTHER,
 
-    /** Сумма в валюте офиса */
+    /** Сумма расхода */
     val amount: Double,
+
+    /**
+     * Валюта расхода (по умолчанию совпадает с валютой офиса). Итоги сводятся
+     * в валюту офиса по курсу НБМ (см. [com.nichita.myvoyage.domain.CurrencyRates]).
+     */
+    val currency: Currency = Currency.MDL,
 
     /** Необязательная заметка */
     val note: String = ""

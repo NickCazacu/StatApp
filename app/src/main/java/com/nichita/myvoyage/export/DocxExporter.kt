@@ -26,6 +26,7 @@ object DocxExporter {
         b.append("""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>""")
         b.append("""<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>""")
 
+        b.append(para(report.kicker, 22, MUTED))
         b.append(para(report.title, 44, WINE, bold = true))
         b.append(para(report.period, 22, MUTED))
         b.append(para("Итого потрачено: ${report.totalText}", 30, WINE, bold = true))

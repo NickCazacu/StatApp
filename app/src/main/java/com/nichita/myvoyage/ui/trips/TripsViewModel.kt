@@ -38,14 +38,15 @@ class TripsViewModel(
             repository.observeFuelTotalsPerTrip(),
             ratesRepository.observeRates()
         ) { trips, currencyTotals, fuelTotals, rates ->
-            val fuelById = fuelTotals.associate { it.tripId to it.total }
             trips.map { t ->
-                // Разновалютные расходы сводим в валюту рейса; топливо уже в ней.
+                // Разновалютные расходы и заправки сводим в валюту рейса по курсу.
                 val expenseSpent = currencyTotals
                     .filter { it.tripId == t.id }
                     .sumOf { rates.convert(it.total, it.currency, t.currency) }
-                val spent = expenseSpent + (fuelById[t.id] ?: 0.0)
-                TripListItem(t, spent)
+                val fuelSpent = fuelTotals
+                    .filter { it.tripId == t.id }
+                    .sumOf { rates.convert(it.total, it.currency, t.currency) }
+                TripListItem(t, expenseSpent + fuelSpent)
             }
         }.stateIn(
             scope = viewModelScope,

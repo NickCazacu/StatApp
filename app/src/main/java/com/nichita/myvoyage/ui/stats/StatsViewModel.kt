@@ -70,7 +70,7 @@ class StatsViewModel(
         ratesRepository.observeRates()
     ) { trip, currencyCatSums, fuel, rates ->
         val tripCurrency = trip?.currency ?: Currency.DEFAULT
-        val fuelStats = FuelCalculator.calculate(fuel)
+        val fuelStats = FuelCalculator.calculate(fuel, rates, tripCurrency)
         val expenseCatSums = convertCategorySums(currencyCatSums, tripCurrency, rates)
         val categorySums = mergeFuelIntoCategories(expenseCatSums, fuelStats.totalFuelCost)
         val total = categorySums.sumOf { it.total }
@@ -97,8 +97,12 @@ class StatsViewModel(
             totals[row.tripId] = (totals[row.tripId] ?: 0.0) +
                 rates.convert(row.total, row.currency, own)
         }
-        // Топливо уже в валюте рейса.
-        fuelTotals.forEach { totals[it.tripId] = (totals[it.tripId] ?: 0.0) + it.total }
+        // Топливо: тоже сводим из валюты заправки в валюту рейса.
+        fuelTotals.forEach { row ->
+            val own = currencyById[row.tripId] ?: return@forEach
+            totals[row.tripId] = (totals[row.tripId] ?: 0.0) +
+                rates.convert(row.total, row.currency, own)
+        }
         History(totals.mapValues { (id, value) -> (currencyById[id] ?: Currency.DEFAULT) to value })
     }
 

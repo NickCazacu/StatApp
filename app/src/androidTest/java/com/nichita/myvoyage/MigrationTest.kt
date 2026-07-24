@@ -8,6 +8,8 @@ import com.nichita.myvoyage.data.db.MIGRATION_1_2
 import com.nichita.myvoyage.data.db.MIGRATION_2_3
 import com.nichita.myvoyage.data.db.MIGRATION_3_4
 import com.nichita.myvoyage.data.db.MIGRATION_4_5
+import com.nichita.myvoyage.data.db.MIGRATION_5_6
+import com.nichita.myvoyage.data.db.MIGRATION_6_7
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -211,6 +213,101 @@ class MigrationTest {
             assertTrue("Расход автомобиля должен записаться", c.moveToFirst())
             assertEquals(5000.0, c.getDouble(0), 0.001)
             assertEquals("FUEL", c.getString(1))
+        }
+
+        db.close()
+    }
+
+    @Test
+    fun migrate5To6_addsCurrency_backfilledFromParent() {
+        // --- Версия 5: траты офисов/авто ещё без собственной валюты ---
+        helper.createDatabase(testDb, 5).apply {
+            execSQL(
+                "INSERT INTO offices (id, name, address, currency) " +
+                    "VALUES (1, 'Офис Кишинёв', '', 'EUR')"
+            )
+            execSQL(
+                "INSERT INTO office_expenses (id, officeId, year, month, category, amount, note) " +
+                    "VALUES (1, 1, 2026, 6, 'RENT', 700.0, 'аренда')"
+            )
+            execSQL(
+                "INSERT INTO vehicles (id, name, plate, currency) " +
+                    "VALUES (1, 'Mercedes Sprinter', '', 'MDL')"
+            )
+            execSQL(
+                "INSERT INTO vehicle_expenses (id, vehicleId, year, month, category, amount, note) " +
+                    "VALUES (1, 1, 2026, 7, 'FUEL', 5000.0, '')"
+            )
+            close()
+        }
+
+        // --- Применяем миграцию и валидируем против схемы версии 6 ---
+        val db = helper.runMigrationsAndValidate(testDb, 6, true, MIGRATION_5_6)
+
+        // Существующим тратам проставлена валюта их офиса/автомобиля.
+        db.query(
+            "SELECT amount, currency, note FROM office_expenses WHERE id = 1"
+        ).use { c ->
+            assertTrue("Расход офиса должен сохраниться", c.moveToFirst())
+            assertEquals(700.0, c.getDouble(0), 0.001)
+            assertEquals("EUR", c.getString(1))
+            assertEquals("аренда", c.getString(2))
+        }
+        db.query(
+            "SELECT amount, currency FROM vehicle_expenses WHERE id = 1"
+        ).use { c ->
+            assertTrue("Расход автомобиля должен сохраниться", c.moveToFirst())
+            assertEquals(5000.0, c.getDouble(0), 0.001)
+            assertEquals("MDL", c.getString(1))
+        }
+
+        // Новые траты пишутся уже со своей валютой.
+        db.execSQL(
+            "INSERT INTO office_expenses (id, officeId, year, month, category, amount, currency, note) " +
+                "VALUES (2, 1, 2026, 7, 'UTILITIES', 3000.0, 'MDL', 'свет')"
+        )
+        db.query("SELECT currency FROM office_expenses WHERE id = 2").use { c ->
+            assertTrue(c.moveToFirst())
+            assertEquals("MDL", c.getString(0))
+        }
+
+        db.close()
+    }
+
+    @Test
+    fun migrate6To7_addsFuelCurrency_backfilledFromTrip() {
+        // --- Версия 6: заправки ещё без собственной валюты ---
+        helper.createDatabase(testDb, 6).apply {
+            execSQL(
+                "INSERT INTO trips (id, destination, startDate, endDate, currency) " +
+                    "VALUES (1, 'Кишинёв → Варшава', 1000, 2000, 'PLN')"
+            )
+            execSQL(
+                "INSERT INTO fuel_entries (id, tripId, date, cost, fuelType) " +
+                    "VALUES (1, 1, 1500, 250.0, 'DIESEL')"
+            )
+            close()
+        }
+
+        // --- Применяем миграцию и валидируем против схемы версии 7 ---
+        val db = helper.runMigrationsAndValidate(testDb, 7, true, MIGRATION_6_7)
+
+        // Существующей заправке проставлена валюта её рейса.
+        db.query("SELECT cost, currency, fuelType FROM fuel_entries WHERE id = 1").use { c ->
+            assertTrue("Заправка должна сохраниться", c.moveToFirst())
+            assertEquals(250.0, c.getDouble(0), 0.001)
+            assertEquals("PLN", c.getString(1))
+            assertEquals("DIESEL", c.getString(2))
+        }
+
+        // Новые заправки пишутся уже со своей валютой.
+        db.execSQL(
+            "INSERT INTO fuel_entries (id, tripId, date, cost, currency, fuelType) " +
+                "VALUES (2, 1, 1600, 60.0, 'EUR', 'DIESEL')"
+        )
+        db.query("SELECT currency FROM fuel_entries WHERE id = 2").use { c ->
+            assertTrue(c.moveToFirst())
+            assertEquals("EUR", c.getString(0))
         }
 
         db.close()

@@ -1,16 +1,14 @@
 package com.nichita.myvoyage.data.repository
 
-import com.nichita.myvoyage.data.db.MonthTotal
-import com.nichita.myvoyage.data.db.VehicleCategorySum
+import com.nichita.myvoyage.data.db.VehicleCurrencyTotal
 import com.nichita.myvoyage.data.db.VehicleDao
-import com.nichita.myvoyage.data.db.VehicleTotal
 import com.nichita.myvoyage.data.model.Vehicle
 import com.nichita.myvoyage.data.model.VehicleExpense
 import kotlinx.coroutines.flow.Flow
 
 /**
  * Доступ к автомобилям и их помесячным расходам для ViewModel-слоя.
- * Бизнес-расчёты (советы) — в domain (VehicleTipsAnalyzer).
+ * Свод разновалютных сумм в валюту авто и советы — в domain/VM.
  */
 class VehicleRepository(private val dao: VehicleDao) {
 
@@ -25,16 +23,10 @@ class VehicleRepository(private val dao: VehicleDao) {
     // --- Расходы ---
     fun observeExpenses(vehicleId: Long): Flow<List<VehicleExpense>> =
         dao.observeExpenses(vehicleId)
+    suspend fun getExpenses(vehicleId: Long): List<VehicleExpense> = dao.getExpenses(vehicleId)
     suspend fun getExpense(id: Long): VehicleExpense? = dao.getExpenseById(id)
-    fun observeTotal(vehicleId: Long): Flow<Double> = dao.observeTotal(vehicleId)
-    fun observeTotalsPerVehicle(): Flow<List<VehicleTotal>> = dao.observeTotalsPerVehicle()
-    fun observeMonthTotals(vehicleId: Long): Flow<List<MonthTotal>> =
-        dao.observeMonthTotals(vehicleId)
-    suspend fun getMonthTotals(vehicleId: Long): List<MonthTotal> = dao.getMonthTotals(vehicleId)
-    fun observeCategorySums(vehicleId: Long): Flow<List<VehicleCategorySum>> =
-        dao.observeCategorySums(vehicleId)
-    suspend fun getCategorySums(vehicleId: Long): List<VehicleCategorySum> =
-        dao.getCategorySums(vehicleId)
+    fun observeCurrencyTotalsPerVehicle(): Flow<List<VehicleCurrencyTotal>> =
+        dao.observeCurrencyTotalsPerVehicle()
     suspend fun upsertExpense(expense: VehicleExpense): Long =
         if (expense.id == 0L) dao.insertExpense(expense)
         else { dao.updateExpense(expense); expense.id }

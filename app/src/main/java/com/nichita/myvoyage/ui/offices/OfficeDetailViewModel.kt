@@ -6,18 +6,23 @@ import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.nichita.myvoyage.data.model.Currency
 import com.nichita.myvoyage.data.model.Office
 import com.nichita.myvoyage.data.model.OfficeExpense
 import com.nichita.myvoyage.data.repository.OfficeRepository
+import com.nichita.myvoyage.data.repository.RatesRepository
+import com.nichita.myvoyage.domain.CurrencyRates
+import com.nichita.myvoyage.domain.OfficeExpenseMath
 import com.nichita.myvoyage.ui.nav.NavArgs
 import com.nichita.myvoyage.ui.officeRepository
+import com.nichita.myvoyage.ui.ratesRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** Расходы офиса за один месяц (для сгруппированного списка). */
+/** Расходы офиса за один месяц; [total] — в валюте офиса по курсу НБМ. */
 data class MonthGroup(
     val year: Int,
     val month: Int,
@@ -25,16 +30,19 @@ data class MonthGroup(
     val items: List<OfficeExpense>
 )
 
-/** Состояние экрана деталей офиса. */
+/** Состояние экрана деталей офиса. [total] — в валюте офиса по курсу НБМ. */
 data class OfficeDetailState(
     val office: Office? = null,
     val total: Double = 0.0,
-    val months: List<MonthGroup> = emptyList()
+    val months: List<MonthGroup> = emptyList(),
+    /** Курсы для показа пересчёта «≈ …» у трат в чужой валюте. */
+    val rates: CurrencyRates = CurrencyRates.FALLBACK
 )
 
 /** ViewModel деталей офиса: шапка, итог и расходы, сгруппированные по месяцам. */
 class OfficeDetailViewModel(
     private val repository: OfficeRepository,
+    ratesRepository: RatesRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -44,8 +52,9 @@ class OfficeDetailViewModel(
         combine(
             repository.observeOffice(officeId),
             repository.observeExpenses(officeId),
-            repository.observeTotal(officeId)
-        ) { office, expenses, total ->
+            ratesRepository.observeRates()
+        ) { office, expenses, rates ->
+            val base = office?.currency ?: Currency.MDL
             // Расходы приходят отсортированными (год/месяц по убыванию) —
             // группировка сохраняет этот порядок.
             val months = expenses
@@ -54,11 +63,16 @@ class OfficeDetailViewModel(
                     MonthGroup(
                         year = key.first,
                         month = key.second,
-                        total = items.sumOf { it.amount },
+                        total = OfficeExpenseMath.total(items, rates, base),
                         items = items
                     )
                 }
-            OfficeDetailState(office = office, total = total, months = months)
+            OfficeDetailState(
+                office = office,
+                total = OfficeExpenseMath.total(expenses, rates, base),
+                months = months,
+                rates = rates
+            )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), OfficeDetailState())
 
     /** Удаляет офис целиком (расходы удалятся каскадом). */
@@ -76,7 +90,13 @@ class OfficeDetailViewModel(
 
     companion object {
         val Factory = viewModelFactory {
-            initializer { OfficeDetailViewModel(officeRepository(), createSavedStateHandle()) }
+            initializer {
+                OfficeDetailViewModel(
+                    officeRepository(),
+                    ratesRepository(),
+                    createSavedStateHandle()
+                )
+            }
         }
     }
 }

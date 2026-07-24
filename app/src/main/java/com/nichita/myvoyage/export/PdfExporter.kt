@@ -52,7 +52,7 @@ object PdfExporter {
         fun need(h: Float) { if (y + h > H - M) newPage() }
 
         // --- Шапка отчёта ---
-        canvas.drawText("Отчёт по рейсу", M, y + 11, pSub); y += 20
+        canvas.drawText(report.kicker, M, y + 11, pSub); y += 20
         canvas.drawText(report.title, M, y + 18, pTitle); y += 30
         canvas.drawText(report.period, M, y + 11, pSub); y += 22
         canvas.drawText("Итого потрачено: ${report.totalText}", M, y + 13, pH2); y += 24

@@ -26,28 +26,28 @@ interface FuelDao {
     suspend fun getAll(): List<FuelEntry>
 
     /**
-     * Стоимость топлива по каждому рейсу, реактивно.
-     * Заправки хранятся отдельно от expenses, поэтому их стоимость
-     * учитывается отдельным запросом и складывается в ViewModel.
+     * Стоимость топлива по каждому рейсу в разрезе валюты заправки, реактивно.
+     * Заправки хранятся отдельно от expenses, поэтому их стоимость учитывается
+     * отдельным запросом; свод в валюту рейса делается в ViewModel по курсу.
      */
     @Query(
         """
-        SELECT tripId AS tripId, SUM(cost) AS total
+        SELECT tripId AS tripId, currency AS currency, SUM(cost) AS total
         FROM fuel_entries
-        GROUP BY tripId
+        GROUP BY tripId, currency
         """
     )
-    fun observeFuelTotalsPerTrip(): Flow<List<TripTotal>>
+    fun observeFuelTotalsPerTrip(): Flow<List<TripCurrencyTotal>>
 
-    /** Стоимость топлива по каждому рейсу (разово, для сравнения со средним). */
+    /** Стоимость топлива по рейсам и валютам (разово, для сравнения со средним). */
     @Query(
         """
-        SELECT tripId AS tripId, SUM(cost) AS total
+        SELECT tripId AS tripId, currency AS currency, SUM(cost) AS total
         FROM fuel_entries
-        GROUP BY tripId
+        GROUP BY tripId, currency
         """
     )
-    suspend fun getFuelTotalsPerTrip(): List<TripTotal>
+    suspend fun getFuelTotalsPerTrip(): List<TripCurrencyTotal>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entry: FuelEntry): Long
