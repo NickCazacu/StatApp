@@ -48,19 +48,35 @@ jobs:
   dependencies:
     name: Уязвимости в зависимостях
     runs-on: ubuntu-latest
+    # Отправка графа зависимостей — это ЗАПИСЬ в репозиторий через Dependency
+    # Submission API. С правами только на чтение (permissions наверху файла)
+    # запрос возвращает HttpError, поэтому здесь права расширены точечно.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
+      # JDK 21 — этого требует gradle/gradle-daemon-jvm.properties
+      # (toolchainVersion=21). На более старом JDK Gradle полезет скачивать
+      # нужный с foojay.io, что медленно и ломается при недоступности сервиса.
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - uses: gradle/actions/setup-gradle@v4
+
+      # dependency-submission запускает ./gradlew внутри себя — бит исполнения
+      # нужен и здесь (см. тот же шаг в job "build").
+      - name: Сделать gradlew исполняемым
+        run: chmod +x ./gradlew
 
       # Строит граф зависимостей проекта и отдаёт его GitHub.
       # Dependabot после этого сам присылает алерты по известным CVE
       # в Room, Compose, Vico, Haze и их транзитивных зависимостях.
+      #
+      # Требуется включённый Dependency graph:
+      # Settings -> Code security -> Dependency graph.
       - name: Отправить граф зависимостей в GitHub
         uses: gradle/actions/dependency-submission@v4
 
@@ -73,9 +89,16 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - uses: gradle/actions/setup-gradle@v4
+
+      # Страховка: git хранит бит исполнения, и он выставлен (100755), но
+      # Windows этот бит не поддерживает, и его легко потерять при повторном
+      # добавлении файла. Без него на Linux-раннере ./gradlew падает
+      # с "Permission denied" (exit 126).
+      - name: Сделать gradlew исполняемым
+        run: chmod +x ./gradlew
 
       # keystore.properties на раннере нет, поэтому сборка идёт неподписанной —
       # ровно так, как задумано в app/build.gradle.kts. Проверяем, что R8
