@@ -2,11 +2,13 @@ package com.nichita.myvoyage.data.remote
 
 import android.util.Xml
 import com.nichita.myvoyage.data.model.Currency
+import java.io.ByteArrayInputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import javax.net.ssl.HttpsURLConnection
 
 /**
  * Загрузка официальных курсов валют Национального банка Молдовы (bnm.md).
@@ -27,6 +29,17 @@ import java.util.Locale
  */
 class BnmRatesService {
 
+    private companion object {
+        /**
+         * Потолок на размер ответа. Настоящий XML НБМ — десятки килобайт;
+         * миллион байт с огромным запасом покрывает любой нормальный ответ.
+         * Лимит защищает от «бесконечного» тела ответа (подменённый DNS,
+         * сломанный прокси, сбой на стороне сервера), которое иначе съело бы
+         * память телефона на этапе парсинга.
+         */
+        const val MAX_RESPONSE_BYTES = 1_000_000
+    }
+
     /**
      * Возвращает курсы (код валюты → MDL за единицу) или null при любой ошибке
      * (нет сети, таймаут, некорректный ответ). Вызывать на IO-диспетчере.
@@ -36,22 +49,44 @@ class BnmRatesService {
         val url = URL("https://www.bnm.md/en/official_exchange_rates?get_xml=1&date=$date")
         val supported = Currency.entries.map { it.code }.toSet()
 
-        var connection: HttpURLConnection? = null
+        var connection: HttpsURLConnection? = null
         return try {
-            connection = (url.openConnection() as HttpURLConnection).apply {
+            // Только TLS. Если соединение почему-то оказалось обычным HTTP
+            // (подмена URL, редирект вниз по протоколу) — приведение упадёт,
+            // и курсы просто не обновятся, вместо отправки запроса в открытую.
+            connection = (url.openConnection() as HttpsURLConnection).apply {
                 requestMethod = "GET"
                 connectTimeout = 10_000
                 readTimeout = 10_000
+                useCaches = false
             }
             if (connection.responseCode != HttpURLConnection.HTTP_OK) return null
-            connection.inputStream.use { stream -> parse(stream, supported) }
-                .takeIf { it.isNotEmpty() }
+            val body = connection.inputStream.use { it.readAtMost(MAX_RESPONSE_BYTES) }
+                ?: return null
+            parse(ByteArrayInputStream(body), supported).takeIf { it.isNotEmpty() }
         } catch (_: Exception) {
             // Офлайн/сбой — молча возвращаем null, вызывающий оставит кэш.
             null
         } finally {
             connection?.disconnect()
         }
+    }
+
+    /**
+     * Читает поток целиком, но не больше [limit] байт. Если данных оказалось
+     * больше — возвращает null: такой ответ точно не курсы НБМ, доверять ему
+     * и тем более разбирать его не нужно.
+     */
+    private fun java.io.InputStream.readAtMost(limit: Int): ByteArray? {
+        val buffer = java.io.ByteArrayOutputStream()
+        val chunk = ByteArray(8 * 1024)
+        while (true) {
+            val read = read(chunk)
+            if (read == -1) break
+            if (buffer.size() + read > limit) return null
+            buffer.write(chunk, 0, read)
+        }
+        return buffer.toByteArray()
     }
 
     private fun parse(stream: java.io.InputStream, supported: Set<String>): Map<String, Double> {

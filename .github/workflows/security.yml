@@ -1,0 +1,84 @@
+# Проверки безопасности для публичного репозитория StatApp.
+#
+# Главная задача — не дать ключу подписи и паролям попасть в историю git.
+# Утёкший keystore нельзя «отозвать»: Google Play и Android привязывают
+# обновления приложения именно к нему, поэтому утечка = приложение больше
+# нельзя безопасно обновлять.
+name: security
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  schedule:
+    # Раз в неделю — чтобы новые CVE в зависимостях находились без коммитов.
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    name: Поиск секретов в коде и истории
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Полная история: секрет мог быть закоммичен и «удалён» позже —
+          # в git он всё равно остаётся навсегда.
+          fetch-depth: 0
+
+      - name: Жёсткая проверка — файлы ключа не должны быть в индексе
+        run: |
+          set -eu
+          FOUND=$(git ls-files | grep -Ei '\.(jks|keystore|p12|pfx)$|(^|/)keystore\.properties$|(^|/)local\.properties$' || true)
+          if [ -n "$FOUND" ]; then
+            echo "::error::В репозиторий попали файлы с секретами:"
+            echo "$FOUND"
+            echo "Удалите их из истории и ПЕРЕВЫПУСТИТЕ ключ подписи."
+            exit 1
+          fi
+          echo "OK: файлов ключа в индексе нет."
+
+      - name: gitleaks — пароли, токены и ключи в истории
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependencies:
+    name: Уязвимости в зависимостях
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # Строит граф зависимостей проекта и отдаёт его GitHub.
+      # Dependabot после этого сам присылает алерты по известным CVE
+      # в Room, Compose, Vico, Haze и их транзитивных зависимостях.
+      - name: Отправить граф зависимостей в GitHub
+        uses: gradle/actions/dependency-submission@v4
+
+  build:
+    name: Сборка release (без подписи)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # keystore.properties на раннере нет, поэтому сборка идёт неподписанной —
+      # ровно так, как задумано в app/build.gradle.kts. Проверяем, что R8
+      # и правила ProGuard не ломают релиз.
+      - name: assembleRelease
+        run: ./gradlew assembleRelease --no-daemon

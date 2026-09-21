@@ -48,6 +48,12 @@ android {
             // Подписываем debug тем же release-ключом, чтобы сборка из Android Studio
             // ставилась ПОВЕРХ установленного release-APK (совпадает подпись + applicationId)
             // и данные (Room-БД) сохранялись. Только если keystore.properties доступен.
+            //
+            // ВНИМАНИЕ (безопасность): такой debug-APK одновременно подписан боевым
+            // ключом И является debuggable — то есть любой, кто его получит, может
+            // через `adb run-as` / отладчик вычитать всю базу расходов, и система
+            // будет считать сборку «настоящей». Раздавать наружу можно ТОЛЬКО
+            // release-APK (`./gradlew assembleRelease`), debug — никогда.
             if (keystoreProps.isNotEmpty()) {
                 signingConfig = signingConfigs.getByName("release")
             }
@@ -57,6 +63,11 @@ android {
             if (keystoreProps.isNotEmpty()) {
                 signingConfig = signingConfigs.getByName("release")
             }
+            // Отладка в релизе закрыта явно (это и есть значение по умолчанию,
+            // но полагаться на умолчание в вопросах безопасности не стоит):
+            // без этого флага дамп памяти и содержимое БД доступны через adb.
+            isDebuggable = false
+            isJniDebuggable = false
             // Оптимизация под слабые устройства:
             // minify (R8: сжатие/обфускация кода) + удаление неиспользуемых ресурсов.
             isMinifyEnabled = true

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Политика сети (MASVS-NETWORK).
+
+  1. cleartextTrafficPermitted="false" — HTTP запрещён на всех уровнях. Даже если
+     в коде когда-нибудь появится "http://", запрос просто не уйдёт.
+  2. trust-anchors только "system" — пользовательские CA НЕ доверенные. Это
+     закрывает перехват трафика (MITM) на устройствах с установленным чужим
+     сертификатом: корпоративный прокси, Burp Suite, рекламный VPN.
+  3. debug-overrides действует ТОЛЬКО в debuggable-сборке: там user-CA разрешены,
+     чтобы можно было отлаживать запросы через прокси. В release не применяется.
+-->
+<network-security-config>
+
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Единственный внешний хост приложения — курсы валют НБМ. -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">bnm.md</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+
+</network-security-config>

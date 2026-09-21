@@ -102,7 +102,7 @@ object PdfExporter {
         canvas.drawText(report.generatedAt, M, y + 10, pSub)
 
         doc.finishPage(page)
-        val dir = File(context.cacheDir, "exports").apply { mkdirs() }
+        val dir = ExportCache.dir(context).apply { mkdirs() }
         val file = File(dir, report.fileName("pdf"))
         FileOutputStream(file).use { doc.writeTo(it) }
         doc.close()

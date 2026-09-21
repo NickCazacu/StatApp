@@ -53,7 +53,7 @@ object XlsxExporter {
             sheets += Sheet(sheetName(t.title), sheetXml(emptyList(), t))
         }
 
-        val dir = File(context.cacheDir, "exports").apply { mkdirs() }
+        val dir = ExportCache.dir(context).apply { mkdirs() }
         val file = File(dir, report.fileName("xlsx"))
         ZipOutputStream(BufferedOutputStream(FileOutputStream(file))).use { zip ->
             zip.put("[Content_Types].xml", contentTypes(sheets.size))

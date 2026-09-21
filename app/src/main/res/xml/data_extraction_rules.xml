@@ -1,19 +1,31 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ (API 31+). Разделяет два разных сценария копирования данных.
+
+  cloud-backup  — выгрузка на серверы Google. ЗАПРЕЩЕНА: база myvoyage.db
+                  содержит финансовые записи пользователя, им нечего делать
+                  в чужом облаке. Резервная копия для пользователя — ручной
+                  экспорт отчёта в PDF/XLSX на экране «Экспорт».
+  device-transfer — прямой перенос на новый телефон при первой настройке.
+                  РАЗРЕШЁН: данные идут с устройства на устройство, минуя сеть,
+                  и человек не теряет историю рейсов при смене телефона.
 -->
 <data-extraction-rules>
+
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <exclude domain="root" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="external" path="." />
     </cloud-backup>
-    <!--
+
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <include domain="database" path="." />
+        <include domain="sharedpref" path="." />
+        <!-- domain="file" — это filesDir, включая exports/ с готовыми
+             отчётами: при переезде на новый телефон они едут вместе с базой. -->
+        <include domain="file" path="." />
     </device-transfer>
-    -->
+
 </data-extraction-rules>

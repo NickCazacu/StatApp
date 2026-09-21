@@ -47,7 +47,7 @@ object DocxExporter {
         )
         b.append("""</w:body></w:document>""")
 
-        val dir = File(context.cacheDir, "exports").apply { mkdirs() }
+        val dir = ExportCache.dir(context).apply { mkdirs() }
         val file = File(dir, report.fileName("docx"))
         ZipOutputStream(BufferedOutputStream(FileOutputStream(file))).use { zip ->
             zip.put("[Content_Types].xml", CONTENT_TYPES)

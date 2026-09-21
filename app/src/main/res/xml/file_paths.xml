@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Единственный каталог, который FileProvider готов отдавать наружу.
+
+  files-path (а не cache-path): отчёты хранятся в filesDir, чтобы их не удалял
+  ни сам Android при нехватке места, ни кнопка «Очистить кэш» в настройках.
+  Доступ к файлу получатель получает только на одну операцию «Поделиться»
+  и только на чтение — см. ReportSharing.
+-->
 <paths>
-    <cache-path name="exports" path="exports/" />
+    <files-path name="exports" path="exports/" />
 </paths>
