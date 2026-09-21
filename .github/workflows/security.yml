@@ -48,9 +48,24 @@ jobs:
   dependencies:
     name: Уязвимости в зависимостях
     runs-on: ubuntu-latest
-    # Отправка графа зависимостей — это ЗАПИСЬ в репозиторий через Dependency
-    # Submission API. С правами только на чтение (permissions наверху файла)
-    # запрос возвращает HttpError, поэтому здесь права расширены точечно.
+    # Только push. На pull_request из форка GitHub принудительно выдаёт
+    # read-токен, и отправка графа всегда падала бы с HttpError — проверять
+    # там нечего, граф всё равно строится при мерже в main.
+    if: github.event_name == 'push'
+    # Отправка графа зависимостей — это ЗАПИСЬ через Dependency Submission API.
+    #
+    # ВАЖНО: одного этого блока мало. permissions в workflow умеет только
+    # СУЖАТЬ права, но не расширять их выше значения по умолчанию, заданного
+    # в настройках репозитория. У личных репозиториев по умолчанию токен
+    # read-only, и тогда job падает с
+    #   HttpError: Dependency submission failed
+    # независимо от того, что написано здесь.
+    #
+    # Лечится один раз руками:
+    #   Settings -> Actions -> General -> Workflow permissions
+    #     -> "Read and write permissions" -> Save
+    # Плюс должен быть включён сам граф:
+    #   Settings -> Code security -> Dependency graph
     permissions:
       contents: write
     steps:
@@ -74,9 +89,6 @@ jobs:
       # Строит граф зависимостей проекта и отдаёт его GitHub.
       # Dependabot после этого сам присылает алерты по известным CVE
       # в Room, Compose, Vico, Haze и их транзитивных зависимостях.
-      #
-      # Требуется включённый Dependency graph:
-      # Settings -> Code security -> Dependency graph.
       - name: Отправить граф зависимостей в GitHub
         uses: gradle/actions/dependency-submission@v4
 
